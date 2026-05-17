@@ -17,13 +17,42 @@ across multiple edits on the same file, encoding auto-detection, and autofix of 
 npm install -g @lenml/apply_edits
 ```
 
-Then use directly:
+## Calling Convention
 
-```bash
-apply-edits [--workspace <dir>] '<command>'
+**Always use pipe or heredoc.** Never pass the edit command as a quoted argument — quotes and special characters (`<<<<<<<`, backticks) cause truncation and parsing errors.
+
+### PowerShell
+
+````powershell
+$edits = @'
+path/to/file.ext
+```markdown
+<<<<<<< SEARCH
+old code
+=======
+new code
+>>>>>>> REPLACE
 ```
+'@
+$edits | apply-edits --workspace .
+````
 
-If `<command>` is omitted, reads from stdin (pipe-friendly).
+### Bash / Unix
+
+````bash
+apply-edits --workspace . << 'EOF'
+path/to/file.ext
+```markdown
+<<<<<<< SEARCH
+old code
+=======
+new code
+>>>>>>> REPLACE
+```
+EOF
+````
+
+If `<command>` is omitted entirely, reads from stdin by default.
 
 | Argument | Description |
 |----------|-------------|
@@ -76,10 +105,10 @@ for skipping>
 
 ## Examples
 
-### Single file, single edit
+### Single file, single edit (PowerShell)
 
-````bash
-apply-edits --workspace . '
+````powershell
+$edits = @'
 src/main.py
 ```python
 <<<<<<< SEARCH
@@ -88,13 +117,29 @@ print("hello")
 print("hello world")
 >>>>>>> REPLACE
 ```
-'
+'@
+$edits | apply-edits --workspace .
 ````
 
-### Multiple files, MATCH mode
+### Single file, single edit (Bash)
 
 ````bash
-apply-edits --workspace . '
+apply-edits --workspace . << 'EOF'
+src/main.py
+```python
+<<<<<<< SEARCH
+print("hello")
+=======
+print("hello world")
+>>>>>>> REPLACE
+```
+EOF
+````
+
+### Multiple files, MATCH mode (Bash)
+
+````bash
+apply-edits --workspace . << 'EOF'
 src/utils.py
 <<<<<<< MATCH
 def add(a, b):
@@ -113,19 +158,13 @@ old content
 new content
 >>>>>>> REPLACE
 ```
-'
+EOF
 ````
 
-### Pipe from file
-
-```bash
-cat edits.txt | apply-edits --workspace .
-```
-
-### Multiple edits on the same file (sequential)
+### Multiple edits on the same file (Bash)
 
 ````bash
-apply-edits --workspace . '
+apply-edits --workspace . << 'EOF'
 src/app.ts
 ```typescript
 <<<<<<< SEARCH
@@ -139,8 +178,14 @@ function another() {
 function updated() {
 >>>>>>> REPLACE
 ```
-'
+EOF
 ````
+
+### Pipe from file
+
+```bash
+cat edits.txt | apply-edits --workspace .
+```
 
 ## Exit codes
 
