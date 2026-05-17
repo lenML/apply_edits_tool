@@ -103,8 +103,10 @@ async function main(): Promise<void> {
     command = await readStdin();
   }
 
+  const rawInput = command ?? "";
+
   if (!command || command.trim() === "") {
-    console.error(formatNoCommand());
+    console.error(formatNoCommand(rawInput));
     process.exit(1);
   }
 
@@ -124,14 +126,14 @@ async function main(): Promise<void> {
   }
 
   if (fileEdits.length === 0) {
-    console.error(formatNoEdits());
+    console.error(formatNoEdits(rawInput));
     process.exit(1);
   }
 
   const simulation = await simulateEdits(fileEdits, workspace!);
 
   if (!simulation.valid) {
-    console.error(formatSimulationErrors(simulation.errors));
+    console.error(formatSimulationErrors(simulation.errors, rawInput));
     process.exit(1);
   }
 
@@ -142,7 +144,7 @@ async function main(): Promise<void> {
 
   try {
     await applyEditsAtomic(simulation.files, workspace!);
-    console.log(formatSuccess(simulation.files.size));
+    console.log(formatSuccess(simulation.files.size, [...simulation.files.keys()]));
     process.exit(0);
   } catch (err: any) {
     console.error(formatApplyError(err.message));

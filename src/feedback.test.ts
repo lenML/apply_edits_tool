@@ -13,7 +13,6 @@ describe("feedback formatters", () => {
   it("formatNoCommand", () => {
     const msg = formatNoCommand();
     expect(msg).toContain("No command provided");
-    expect(msg).toContain("--command");
   });
 
   it("formatParseError", () => {
@@ -21,7 +20,8 @@ describe("feedback formatters", () => {
     expect(msg).toContain("Parse error");
     expect(msg).toContain("Expected X at line 3");
     expect(msg).toContain("line 3");
-    expect(msg).toContain(">   3");
+    expect(msg).toContain("Input:");
+    expect(msg).toContain("chars");
   });
 
   it("formatParseError without command", () => {
@@ -32,6 +32,7 @@ describe("feedback formatters", () => {
 
   it("formatNoEdits", () => {
     expect(formatNoEdits()).toContain("No valid edit blocks");
+    expect(formatNoEdits("some text")).toContain("Expected format");
   });
 
   it("formatSimulationErrors with basic info", () => {
@@ -89,8 +90,10 @@ describe("feedback formatters", () => {
   });
 
   it("formatSuccess", () => {
-    const msg = formatSuccess(3);
+    const msg = formatSuccess(3, ["a.ts", "b.ts"]);
     expect(msg).toContain("3 file(s)");
     expect(msg).toContain("Successfully");
+    expect(msg).toContain("a.ts");
+    expect(msg).toContain("b.ts");
   });
 });
