@@ -3,6 +3,10 @@
 import * as path from "node:path";
 import { createInterface } from "node:readline";
 import { autofixInput } from "./autofixer.js";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json");
 import { parseCommand } from "./parser.js";
 import { simulateEdits, applyEditsAtomic } from "./editor.js";
 import {
@@ -12,6 +16,7 @@ import {
   formatSimulationErrors,
   formatApplyError,
   formatSuccess,
+  formatDryRun,
 } from "./feedback.js";
 
 async function readStdin(): Promise<string> {
@@ -28,6 +33,8 @@ function printHelp(): void {
 
 --workspace <dir>   Root directory for file paths (default: current working directory)
 <command>           The edit command string. If omitted, reads from stdin (pipe-friendly).
+--version           Show version number
+--dry-run           Validate edits without applying them
 
 The command format consists of one or more blocks:
 
@@ -59,6 +66,7 @@ return n
 async function main(): Promise<void> {
   let command: string | undefined;
   let workspace: string | null = null;
+  let dryRun = false;
 
   const args = process.argv.slice(2);
   // Parse flags first, then first positional arg is the command
@@ -67,6 +75,12 @@ async function main(): Promise<void> {
     if (args[i] === "--workspace" && i + 1 < args.length) {
       workspace = path.resolve(args[i + 1]);
       i += 2;
+    } else if (args[i] === "--dry-run") {
+      dryRun = true;
+      i++;
+    } else if (args[i] === "--version") {
+      console.log(pkg.version);
+      process.exit(0);
     } else if (args[i] === "--help") {
       printHelp();
       process.exit(0);
@@ -119,6 +133,11 @@ async function main(): Promise<void> {
   if (!simulation.valid) {
     console.error(formatSimulationErrors(simulation.errors));
     process.exit(1);
+  }
+
+  if (dryRun) {
+    console.log(formatDryRun(simulation.files.size));
+    process.exit(0);
   }
 
   try {
