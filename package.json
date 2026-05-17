@@ -1,6 +1,6 @@
 {
   "name": "@lenml/apply_edits",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A CLI tool for batch file editing with SEARCH/REPLACE and MATCH/REPLACE patterns, supporting atomic transactions and cross-platform compatibility. Designed for AI coding assistants like Codex.",
   "type": "module",
   "main": "./dist/index.cjs",
