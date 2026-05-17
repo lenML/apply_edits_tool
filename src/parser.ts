@@ -13,25 +13,37 @@ export function parseCommand(command: string): FileEdit[] {
 
     const filePath = lines[i].trim();
     i++;
-    if (filePath.startsWith("```")) {
+    if (filePath.startsWith("`")) {
       throw new Error(`Expected file path, got code fence at line ${i}`);
     }
 
     while (i < lines.length && !lines[i].trim()) i++;
-    if (i >= lines.length || !lines[i].trim().startsWith("```")) {
+    if (i >= lines.length) {
       throw new Error(`Missing code fence after file path: ${filePath}`);
     }
+
+    // Determine fence length (3+ backticks)
+    const fenceLen = lines[i].trim().match(/^(`+)/);
+    if (!fenceLen || fenceLen[1].length < 3) {
+      throw new Error(`Missing code fence after file path: ${filePath}`);
+    }
+    const openFence = fenceLen[1];
     i++;
 
     const fenceLines: string[] = [];
-    while (i < lines.length && !lines[i].trim().startsWith("```")) {
+    while (i < lines.length) {
+      // Closing fence = same number of backticks, optionally followed by whitespace
+      const close = lines[i].trim().match(new RegExp("^" + openFence + "(\\s.*)?$"));
+      if (close) break;
       fenceLines.push(lines[i]);
       i++;
     }
     if (i >= lines.length) {
-      throw new Error(`Unclosed code fence for file: ${filePath}`);
+      throw new Error(`Missing code fence after file path: ${filePath}`);
     }
     i++;
+
+
 
     const blocks = parseEditBlocks(fenceLines, filePath);
     fileEdits.push({ filePath, blocks });

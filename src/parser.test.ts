@@ -28,6 +28,43 @@ describe("parseCommand", () => {
     expect(result[0].blocks[0].replaceText).toBe("new code");
   });
 
+  it("parse with 4-backtick fence", () => {
+    const cmd = "README.md\n" +
+      "````markdown\n" +
+      "<<<<<<< SEARCH\n" +
+      "old\n" +
+      "=======\n" +
+      "new\n" +
+      ">>>>>>> REPLACE\n" +
+      "````\n";
+    const result = parseCommand(cmd);
+    expect(result).toHaveLength(1);
+    expect(result[0].filePath).toBe("README.md");
+    expect(result[0].blocks).toHaveLength(1);
+    expect(result[0].blocks[0].mode).toBe("SEARCH");
+    expect(result[0].blocks[0].searchText).toBe("old");
+    expect(result[0].blocks[0].replaceText).toBe("new");
+  });
+
+
+  it("parse with 4-backtick fence containing 3-backtick code inside", () => {
+    const cmd = "README.md\n" +
+      "````markdown\n" +
+      "some text with\n" +
+      "```python\n" +
+      "code here\n" +
+      "```\n" +
+      "<<<<<<< SEARCH\n" +
+      "old\n" +
+      "=======\n" +
+      "new\n" +
+      ">>>>>>> REPLACE\n" +
+      "and more\n" +
+      "````\n";
+    const result = parseCommand(cmd);
+    expect(result).toHaveLength(1);
+    expect(result[0].blocks).toHaveLength(1);
+  });
   it("parses a MATCH block with ... wildcard", () => {
     const input = [
       "test.py",
@@ -113,7 +150,7 @@ describe("parseCommand", () => {
 
   it("throws on unclosed code fence", () => {
     const input = ["test.py", fence, searchHeader, "old", separator, "new"].join("\n");
-    expect(() => parseCommand(input)).toThrow("Unclosed code fence");
+    expect(() => parseCommand(input)).toThrow("Missing code fence after file path");
   });
 
   it("skips non-marker lines between blocks inside fence", () => {
