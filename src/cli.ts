@@ -18,6 +18,31 @@ import {
 
 import pkg from "../package.json";
 
+
+/**
+ * Checks the decoded input for encoding red flags.
+ * Returns an error message if issues are detected, null if clean.
+ */
+function checkEncodingIssues(input: string): string | null {
+  // Check for null bytes ? indicates UTF-16 LE was read as latin1
+  if (input.includes("\0")) {
+    return (
+      "Input contains null bytes ? likely UTF-16 LE data decoded as wrong encoding.\n" +
+      "  Set PowerShell output encoding to UTF-8 before piping:\n" +
+      "    \x24OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8"
+    );
+  }
+
+  // Check for trailing BOM remnant (?? at start from UTF-16 LE BOM)
+  if (input.length > 0 && (input.charCodeAt(0) === 0xFF || input.charCodeAt(0) === 0xFE)) {
+    return (
+      "Input starts with byte-order-mark remnant ? likely a BOM was not stripped correctly."
+    );
+  }
+
+  return null;
+}
+
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of process.stdin) {
@@ -100,6 +125,11 @@ async function main(): Promise<void> {
 
   if (command === undefined) {
     command = await readStdin();
+    const encErr = checkEncodingIssues(command);
+    if (encErr) {
+      console.error("? Encoding error\n  " + encErr);
+      process.exit(1);
+    }
   }
 
   const rawInput = command ?? "";
