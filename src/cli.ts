@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as path from "node:path";
-import { createInterface } from "node:readline";
+import { decodeBuffer } from "./encoding.js";
 import { autofixInput } from "./autofixer.js";
 
 import { parseCommand } from "./parser.js";
@@ -19,12 +19,12 @@ import {
 import pkg from "../package.json";
 
 async function readStdin(): Promise<string> {
-  const rl = createInterface({ input: process.stdin });
-  const chunks: string[] = [];
-  for await (const chunk of rl) {
-    chunks.push(chunk);
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk instanceof Buffer ? chunk : Buffer.from(chunk));
   }
-  return chunks.join("\n");
+  const buffer = Buffer.concat(chunks);
+  return decodeBuffer(buffer);
 }
 
 function printHelp(): void {
