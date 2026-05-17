@@ -3,10 +3,7 @@
 import * as path from "node:path";
 import { createInterface } from "node:readline";
 import { autofixInput } from "./autofixer.js";
-import { createRequire } from "node:module";
 
-const require = createRequire(import.meta.url);
-const pkg = require("../package.json");
 import { parseCommand } from "./parser.js";
 import { simulateEdits, applyEditsAtomic } from "./editor.js";
 import {
@@ -18,6 +15,8 @@ import {
   formatSuccess,
   formatDryRun,
 } from "./feedback.js";
+
+import pkg from "../package.json";
 
 async function readStdin(): Promise<string> {
   const rl = createInterface({ input: process.stdin });
@@ -79,7 +78,7 @@ async function main(): Promise<void> {
       dryRun = true;
       i++;
     } else if (args[i] === "--version") {
-      console.log(pkg.version);
+      console.log(pkg.name, pkg.version);
       process.exit(0);
     } else if (args[i] === "--help") {
       printHelp();
