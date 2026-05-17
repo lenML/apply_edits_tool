@@ -2,6 +2,7 @@
 
 import * as path from "node:path";
 import { createInterface } from "node:readline";
+import { autofixInput } from "./autofixer.js";
 import { parseCommand } from "./parser.js";
 import { simulateEdits, applyEditsAtomic } from "./editor.js";
 
@@ -83,9 +84,12 @@ async function main(): Promise<void> {
     workspace = process.cwd();
   }
 
+  // Autofix common formatting issues before parsing
+  const fixedCommand = autofixInput(command);
+
   let fileEdits: Awaited<ReturnType<typeof parseCommand>>;
   try {
-    fileEdits = parseCommand(command!);
+    fileEdits = parseCommand(fixedCommand);
   } catch (err: any) {
     console.error(`Parse error: ${err.message}`);
     process.exit(1);

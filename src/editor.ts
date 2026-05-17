@@ -1,5 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { readFileAutoEncoding, writeFileUtf8 } from "./encoding.js";
 import type { EditBlock, FileEdit, SimulationResult } from "./types.js";
 import { findMatchMatch, findSearchMatch } from "./matcher.js";
 
@@ -40,7 +41,7 @@ export async function simulateEdits(
 
     let content: string;
     try {
-      content = await fs.readFile(fullPath, "utf-8");
+      content = await readFileAutoEncoding(fullPath);
     } catch (err: any) {
       result.valid = false;
       result.errors.push({ filePath, error: `Cannot read file: ${err.message}` });
@@ -99,7 +100,7 @@ function randomSuffix(): string {
 async function writeWithRetry(filePath: string, content: string, maxRetries = 3): Promise<void> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await fs.writeFile(filePath, content, "utf-8");
+      await writeFileUtf8(filePath, content);
       return;
     } catch (err) {
       if (attempt < maxRetries - 1) {
