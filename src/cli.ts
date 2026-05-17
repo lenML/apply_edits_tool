@@ -43,14 +43,16 @@ new code
 For MATCH mode with wildcard:
 
 path/to/file.py
+\`\`\`python
 <<<<<<< MATCH
 def fib(n):
 ...
-    return result
+return result
 =======
 def fib(n):
-    return n
+return n
 >>>>>>> REPLACE
+\`\`\`
   `);
 }
 
