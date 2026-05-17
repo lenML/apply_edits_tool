@@ -144,8 +144,9 @@ describe("parseCommand", () => {
     expect(result[0].filePath).toBe("test.py");
   });
 
-  it("throws on file path starting with code fence", () => {
-    expect(() => parseCommand(fence + "\n")).toThrow("Expected file path, got code fence");
+  it("skips outer wrapping fence lines instead of throwing", () => {
+    const result = parseCommand(fence + "\n");
+    expect(result).toHaveLength(0);
   });
 
   it("throws on unclosed code fence", () => {
@@ -195,4 +196,29 @@ describe("parseCommand", () => {
     const result = parseCommand(input);
     expect(result[0].blocks).toHaveLength(2);
   });
+
+  it("handles outer backtick wrapping around entire edit", () => {
+    const input = [
+      fence, "test.py", fence,
+      searchHeader, "old", separator, "new", replaceFooter,
+      fence, fence,
+    ].join("\n");
+    const result = parseCommand(input);
+    expect(result).toHaveLength(1);
+    expect(result[0].filePath).toBe("test.py");
+    expect(result[0].blocks).toHaveLength(1);
+  });
+
+  it("handles multiple levels of outer fence wrapping", () => {
+    const input = [
+      fence, fence, "test.py", fence,
+      searchHeader, "old", separator, "new", replaceFooter,
+      fence, fence, fence,
+    ].join("\n");
+    const result = parseCommand(input);
+    expect(result).toHaveLength(1);
+    expect(result[0].filePath).toBe("test.py");
+    expect(result[0].blocks).toHaveLength(1);
+  });
+
 });

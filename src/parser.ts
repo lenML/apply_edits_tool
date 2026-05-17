@@ -11,11 +11,14 @@ export function parseCommand(command: string): FileEdit[] {
       continue;
     }
 
-    const filePath = lines[i].trim();
-    i++;
-    if (filePath.startsWith("`")) {
-      throw new Error(`Expected file path, got code fence at line ${i}`);
+    const candidate = lines[i].trim();
+    // Skip outer wrapping fence lines (e.g., AI markdown ``` wrapping)
+    if (/^`{3,}$/.test(candidate)) {
+      i++;
+      continue;
     }
+    const filePath = candidate;
+    i++;
 
     while (i < lines.length && !lines[i].trim()) i++;
     if (i >= lines.length) {
