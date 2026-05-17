@@ -24,11 +24,10 @@ async function readStdin(): Promise<string> {
 }
 
 function printHelp(): void {
-  console.log(`Usage: apply-edits [--workspace <dir>] (--command <string> | --command - | --command readfile(0) | no --command reads from stdin)
+  console.log(`Usage: apply-edits [--workspace <dir>] [<command>]
 
 --workspace <dir>   Root directory for file paths (default: current working directory)
---command           The edit command string; use "-" or "readfile(0)" to read from stdin.
-                    If --command is omitted, reads from stdin as well.
+<command>           The edit command string. If omitted, reads from stdin (pipe-friendly).
 
 The command format consists of one or more blocks:
 
@@ -58,28 +57,33 @@ def fib(n):
 async function main(): Promise<void> {
   let command: string | undefined;
   let workspace: string | null = null;
-  let explicitStdin = false;
 
   const args = process.argv.slice(2);
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--command" && i + 1 < args.length) {
-      const val = args[i + 1];
-      if (val === "-" || val === "readfile(0)") {
-        explicitStdin = true;
-      } else {
-        command = val;
-      }
-      i++;
-    } else if (args[i] === "--workspace" && i + 1 < args.length) {
+  // Parse flags first, then first positional arg is the command
+  let i = 0;
+  while (i < args.length) {
+    if (args[i] === "--workspace" && i + 1 < args.length) {
       workspace = path.resolve(args[i + 1]);
-      i++;
+      i += 2;
     } else if (args[i] === "--help") {
       printHelp();
       process.exit(0);
+    } else if (args[i] === "--") {
+      // Everything after -- is positional
+      i++;
+      break;
+    } else if (!args[i].startsWith("--")) {
+      // First positional arg = command
+      command = args[i];
+      i++;
+      break;
+    } else {
+      // Unknown flag, skip
+      i++;
     }
   }
 
-  if (explicitStdin || command === undefined) {
+  if (command === undefined) {
     command = await readStdin();
   }
 

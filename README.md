@@ -30,15 +30,13 @@ npx @lenml/apply_edits --help
 ## Usage
 
 ```
-apply-edits [--workspace <dir>] (--command <string> | --command - | reads from stdin by default)
+apply-edits [--workspace <dir>] [<command>]
 ```
 
 | Argument | Description |
 |----------|-------------|
 | `--workspace <dir>` | Root directory for file paths (default: current directory) |
-| `--command <string>` | Edit command string directly |
-| `--command -` / `--command readfile(0)` | Read command from stdin |
-| (no `--command`) | Also reads from stdin (pipe-friendly) |
+| `<command>` | Edit command string as positional argument. If omitted, reads from stdin (pipe-friendly). |
 | `--help` | Show help information |
 
 ### Exit codes
@@ -91,7 +89,7 @@ def fib(n):
 ### 1. Direct command string
 
 ```bash
-apply-edits --workspace /my/project --command '
+apply-edits --workspace /my/project '
 src/main.py
 ```python
 <<<<<<< SEARCH
@@ -109,16 +107,10 @@ print("hello world")
 cat edits.txt | apply-edits --workspace .
 ```
 
-### 3. Explicit stdin
+### 3. Multiple files and MATCH mode
 
 ```bash
-apply-edits --command - < edits.txt
-```
-
-### 4. Multiple files and MATCH mode
-
-```bash
-apply-edits --workspace . --command '
+apply-edits --workspace . '
 src/utils.py
 ```python
 <<<<<<< MATCH
