@@ -180,20 +180,35 @@ export function formatSimulationErrors(errors: SimulationError[], rawInput?: str
   return out.join("\n");
 }
 
-export function formatApplyError(message: string): string {
-  return `✖ Write error\n  ${message}\n\n  Temp files have been cleaned up. No files were modified.`;
+export function formatApplyError(message: string, extra?: { replaceText?: string }): string {
+  let msg = `✖ Write error
+  ${message}
+
+  Temp files have been cleaned up. No files were modified.`;
+  if (extra?.replaceText) {
+    msg += `
+
+  Would replace with:
+  ${extra.replaceText}`;
+  }
+  return msg;
 }
 
 export function formatDryRun(fileCount: number): string {
   return `DRY RUN - All ${fileCount} file(s) validated but NOT applied.`;
 }
 
-export function formatSuccess(fileCount: number, files?: string[]): string {
+export function formatSuccess(fileCount: number, files?: string[], matches?: { filePath: string; matchedLine: string }[]): string {
   const out: string[] = [];
   out.push(`✔ Successfully applied edits to ${fileCount} file(s).`);
   if (files && files.length > 0) {
     for (const f of files) {
       out.push(`   - ${f}`);
+      const m = matches?.find((x) => x.filePath === f);
+      if (m) {
+        const display = m.matchedLine.length > 60 ? m.matchedLine.slice(0, 57) + "..." : m.matchedLine;
+        out.push(`     Matched: ${display}`);
+      }
     }
   }
   return out.join("\n");

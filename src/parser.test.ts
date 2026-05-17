@@ -46,7 +46,6 @@ describe("parseCommand", () => {
     expect(result[0].blocks[0].replaceText).toBe("new");
   });
 
-
   it("parse with 4-backtick fence containing 3-backtick code inside", () => {
     const cmd = "README.md\n" +
       "````markdown\n" +
@@ -65,6 +64,7 @@ describe("parseCommand", () => {
     expect(result).toHaveLength(1);
     expect(result[0].blocks).toHaveLength(1);
   });
+
   it("parses a MATCH block with ... wildcard", () => {
     const input = [
       "test.py",
@@ -154,6 +154,10 @@ describe("parseCommand", () => {
     expect(() => parseCommand(input)).toThrow("Missing code fence after file path");
   });
 
+  it("throws on missing code fence after file path with blank lines", () => {
+    expect(() => parseCommand("test.py\n  \n\n")).toThrow("Missing code fence after file path");
+  });
+
   it("skips non-marker lines between blocks inside fence", () => {
     const input = [
       "test.py",
@@ -199,9 +203,16 @@ describe("parseCommand", () => {
 
   it("handles outer backtick wrapping around entire edit", () => {
     const input = [
-      fence, "test.py", fence,
-      searchHeader, "old", separator, "new", replaceFooter,
-      fence, fence,
+      fence,
+      "test.py",
+      fence,
+      searchHeader,
+      "old",
+      separator,
+      "new",
+      replaceFooter,
+      fence,
+      fence,
     ].join("\n");
     const result = parseCommand(input);
     expect(result).toHaveLength(1);
@@ -211,14 +222,22 @@ describe("parseCommand", () => {
 
   it("handles multiple levels of outer fence wrapping", () => {
     const input = [
-      fence, fence, "test.py", fence,
-      searchHeader, "old", separator, "new", replaceFooter,
-      fence, fence, fence,
+      fence,
+      fence,
+      "test.py",
+      fence,
+      searchHeader,
+      "old",
+      separator,
+      "new",
+      replaceFooter,
+      fence,
+      fence,
+      fence,
     ].join("\n");
     const result = parseCommand(input);
     expect(result).toHaveLength(1);
     expect(result[0].filePath).toBe("test.py");
     expect(result[0].blocks).toHaveLength(1);
   });
-
 });

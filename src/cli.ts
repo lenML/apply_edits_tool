@@ -143,7 +143,7 @@ async function main(): Promise<void> {
 
   try {
     await applyEditsAtomic(simulation.files, workspace!);
-    console.log(formatSuccess(simulation.files.size, [...simulation.files.keys()]));
+    console.log(formatSuccess(simulation.files.size, [...simulation.files.keys()], simulation.matches));
     process.exit(0);
   } catch (err: any) {
     console.error(formatApplyError(err.message));

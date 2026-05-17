@@ -1,99 +1,174 @@
 import { describe, it, expect } from "vitest";
 import {
-  formatNoCommand,
   formatParseError,
+  formatNoCommand,
   formatNoEdits,
   formatSimulationErrors,
   formatApplyError,
   formatSuccess,
+  formatDryRun,
 } from "./feedback.js";
-import type { SimulationError } from "./types.js";
 
-describe("feedback formatters", () => {
-  it("formatNoCommand", () => {
-    const msg = formatNoCommand();
-    expect(msg).toContain("No command provided");
+describe("feedback", () => {
+  it("formatNoCommand shows input size", () => {
+    const msg = formatNoCommand("hello");
+    expect(msg).toContain("Received");
+    expect(msg).toContain("5 char(s)");
+    expect(msg).toContain("hello");
   });
 
-  it("formatParseError", () => {
-    const msg = formatParseError("Expected X at line 3", "a\nb\nc\n");
-    expect(msg).toContain("Parse error");
-    expect(msg).toContain("Expected X at line 3");
-    expect(msg).toContain("line 3");
-    expect(msg).toContain("Input:");
-    expect(msg).toContain("chars");
+  it("formatNoCommand shows truncated input when too long", () => {
+    const long = "a".repeat(200);
+    const msg = formatNoCommand(long);
+    expect(msg).toContain("200 char(s)");
   });
 
-  it("formatParseError without command", () => {
-    const msg = formatParseError("some error");
+  it("formatParseError shows input size and lines", () => {
+    const input = "test.py\n```\nold\n";
+    const msg = formatParseError("some error", input);
     expect(msg).toContain("some error");
-    expect(msg).not.toContain("│");
+    expect(msg).toContain("Input");
   });
 
-  it("formatNoEdits", () => {
-    expect(formatNoEdits()).toContain("No valid edit blocks");
-    expect(formatNoEdits("some text")).toContain("Expected format");
+  it("formatNoEdits shows raw input", () => {
+    const msg = formatNoEdits("some text");
+    expect(msg).toContain("some text");
   });
 
-  it("formatSimulationErrors with basic info", () => {
-    const errors: SimulationError[] = [
+  it("formatSimulationErrors with match hint", () => {
+    const errors = [
       {
         filePath: "test.ts",
-        error: "Block 1/1: SEARCH block not found",
+        blockIndex: 0,
+        totalBlocks: 1,
+        searchText: "old code",
+        replaceText: "new code",
+        error: "SEARCH block not found",
       },
     ];
-    const msg = formatSimulationErrors(errors);
+    const msg = formatSimulationErrors(errors, "");
     expect(msg).toContain("test.ts");
     expect(msg).toContain("SEARCH block not found");
-    expect(msg).toContain("1 error(s)");
+    expect(msg).toContain("old code");
+    expect(msg).toContain("new code");
   });
 
-  it("formatSimulationErrors with detailed context", () => {
-    const errors: SimulationError[] = [
-      {
-        filePath: "main.py",
-        error: "Block 2/3: SEARCH block not found after applying previous 1 block(s)",
-        blockIndex: 2,
-        totalBlocks: 3,
-        searchText: "def foo():\n    return result",
-        currentContent: "def bar():\n    return 42\n",
-      },
-    ];
-    const msg = formatSimulationErrors(errors);
-    expect(msg).toContain("main.py");
-    expect(msg).toContain("Block 2/3");
-    expect(msg).toContain("def foo()");
-    expect(msg).toContain("def bar()");
-    expect(msg).toContain("Tip");
+  it("formatApplyError shows error message", () => {
+    const msg = formatApplyError("write error");
+    expect(msg).toContain("write error");
   });
 
-  it("formatSimulationErrors with exact line match hint", () => {
-    const errors: SimulationError[] = [
-      {
-        filePath: "x.ts",
-        error: "Block 1/1: SEARCH block not found",
-        blockIndex: 1,
-        totalBlocks: 1,
-        searchText: "console.log('hello')",
-        currentContent: "console.log('HELLO')\n",
-      },
-    ];
-    const msg = formatSimulationErrors(errors);
-    expect(msg).toContain("matches the first line");
+  it("formatApplyError with replaceText shows block", () => {
+    const msg = formatApplyError("apply failed", { replaceText: "replacement content" });
+    expect(msg).toContain("apply failed");
+    expect(msg).toContain("replacement content");
+    expect(msg).toContain("Would replace with");
   });
 
-  it("formatApplyError", () => {
-    const msg = formatApplyError("EPERM: access denied");
-    expect(msg).toContain("Write error");
-    expect(msg).toContain("EPERM");
-    expect(msg).toContain("No files were modified");
-  });
-
-  it("formatSuccess", () => {
-    const msg = formatSuccess(3, ["a.ts", "b.ts"]);
+  it("formatSuccess shows file count", () => {
+    const msg = formatSuccess(3, ["a.ts", "b.ts", "c.ts"]);
     expect(msg).toContain("3 file(s)");
     expect(msg).toContain("Successfully");
     expect(msg).toContain("a.ts");
     expect(msg).toContain("b.ts");
+  });
+
+  it("formatDryRun returns correct message", () => {
+    const msg = formatDryRun(3);
+    expect(msg).toContain("DRY RUN");
+    expect(msg).toContain("3 file(s)");
+    expect(msg).toContain("validated");
+  });
+
+  it("formatSimulationErrors with rawInput shows input size", () => {
+    const errors = [{
+      filePath: "test.ts",
+      blockIndex: 0,
+      totalBlocks: 1,
+      searchText: "old",
+      replaceText: "new",
+      error: "not found",
+    }];
+    const msg = formatSimulationErrors(errors, "test input");
+    expect(msg).toContain("test.ts");
+    expect(msg).toContain("Input:");
+    expect(msg).toContain("10 chars");
+  });
+
+  it("formatSimulationErrors with currentContent gives tips", () => {
+    const errors = [{
+      filePath: "test.ts",
+      blockIndex: 0,
+      totalBlocks: 1,
+      searchText: "old code",
+      replaceText: "new code",
+      error: "SEARCH block not found",
+      currentContent: "old code\nother content",
+    }];
+    const msg = formatSimulationErrors(errors, "");
+    expect(msg).toContain("Current file content");
+    expect(msg).toContain("old code");
+  });
+
+  it("formatNoCommand shows empty input", () => {
+    const msg = formatNoCommand("");
+    expect(msg).toContain("empty input");
+  });
+
+  it("formatSimulationErrors with many lines triggers snippet truncation", () => {
+    const manyLines = Array.from({ length: 20 }, (_, i) => "line " + i).join("\n");
+    const errors = [{
+      filePath: "test.ts",
+      blockIndex: 0,
+      totalBlocks: 1,
+      searchText: "old",
+      replaceText: "new",
+      error: "SEARCH block not found",
+      currentContent: manyLines,
+    }];
+    const msg = formatSimulationErrors(errors, "");
+    expect(msg).toContain("(8 more lines)");
+  });
+
+  it("formatSimulationErrors with exact line match gives close match tip", () => {
+    const errors = [{
+      filePath: "test.ts",
+      blockIndex: 0,
+      totalBlocks: 1,
+      searchText: "def foo():\n    pass",
+      replaceText: "new code",
+      error: "SEARCH block not found",
+      currentContent: "def foo():\n    pass\nother content",
+    }];
+    const msg = formatSimulationErrors(errors, "");
+    expect(msg).toContain("matches the first line");
+  });
+
+  it("formatSimulationErrors with partial match gives tip", () => {
+    const errors = [{
+      filePath: "test.ts",
+      blockIndex: 0,
+      totalBlocks: 1,
+      searchText: "OLD_CODE_HERE",
+      replaceText: "new",
+      error: "SEARCH block not found",
+      currentContent: "some old_code_here line\nanother line",
+    }];
+    const msg = formatSimulationErrors(errors, "");
+    expect(msg).toContain("partial match");
+  });
+
+  it("formatSimulationErrors with no match gives default tip", () => {
+    const errors = [{
+      filePath: "test.ts",
+      blockIndex: 0,
+      totalBlocks: 1,
+      searchText: "completely missing text",
+      replaceText: "new",
+      error: "SEARCH block not found",
+      currentContent: "some content\nother stuff",
+    }];
+    const msg = formatSimulationErrors(errors, "");
+    expect(msg).toContain("does not appear anywhere");
   });
 });

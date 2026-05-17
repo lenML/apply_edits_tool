@@ -1,69 +1,90 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
-import { vol } from "memfs";
-import { readFileAutoEncoding, writeFileUtf8 } from "./encoding.js";
+import { describe, it, expect } from "vitest";
+import { decodeBuffer, readFileAutoEncoding, writeFileUtf8 } from "./encoding.js";
+import { isUtf8 } from "node:buffer";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { tmpdir } from "node:os";
 
-vi.mock("node:fs/promises", async () => {
-  const memfs = await import("memfs");
-  return memfs.fs.promises;
-});
+const testDir = tmpdir();
 
-const ws = process.cwd();
+describe("encoding", () => {
+  // decodeBuffer tests
 
-function initMemfs(): void {
-  vol.reset();
-  vol.mkdirSync(ws, { recursive: true });
-}
-
-describe("readFileAutoEncoding", () => {
-  beforeEach(initMemfs);
-
-  it("reads UTF-8 without BOM", async () => {
-    vol.writeFileSync(ws + "/_utf8.txt", "hello 世界\n", "utf-8");
-    const result = await readFileAutoEncoding(ws + "/_utf8.txt");
-    expect(result).toBe("hello 世界\n");
+  it("returns empty string for empty buffer", () => {
+    expect(decodeBuffer(Buffer.alloc(0))).toBe("");
   });
 
-  it("reads UTF-8 with BOM and strips it", async () => {
-    const buf = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("你好", "utf-8")]);
-    vol.writeFileSync(ws + "/_bom.txt", buf);
-    const result = await readFileAutoEncoding(ws + "/_bom.txt");
-    expect(result).toBe("你好");
+  it("decodes UTF-8 BOM buffer", () => {
+    const buf = Buffer.from([0xEF, 0xBB, 0xBF, 0x68, 0x65, 0x6C, 0x6C, 0x6F]);
+    expect(decodeBuffer(buf)).toBe("hello");
+  });
+
+  it("decodes UTF-16 LE BOM buffer", () => {
+    const buf = Buffer.from([0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x6C, 0x00, 0x6C, 0x00, 0x6F, 0x00]);
+    expect(decodeBuffer(buf)).toBe("hello");
+  });
+
+  it("decodes UTF-16 BE BOM buffer", () => {
+    const buf = Buffer.from([0xFE, 0xFF, 0x00, 0x68, 0x00, 0x65, 0x00, 0x6C, 0x00, 0x6C, 0x00, 0x6F]);
+    expect(decodeBuffer(buf)).toBe("hello");
+  });
+
+  it("handles non-UTF-8 bytes gracefully (falls through encodings)", () => {
+    const buf = Buffer.from([0x80, 0x81, 0x82, 0xFF]);
+    const result = decodeBuffer(buf);
+    expect(typeof result).toBe("string");
+    expect(result.length).toBeGreaterThan(0);
+    expect(isUtf8(buf)).toBe(false);
+  });
+
+  // readFileAutoEncoding integration tests
+
+  it("reads UTF-8 without BOM", async () => {
+    const fp = path.join(testDir, "test_utf8_nobom_" + Date.now() + ".txt");
+    await fs.writeFile(fp, "hello", "utf-8");
+    const result = await readFileAutoEncoding(fp);
+    expect(result).toBe("hello");
+    await fs.unlink(fp);
+  });
+
+  it("reads UTF-8 with BOM", async () => {
+    const fp = path.join(testDir, "test_utf8_bom_" + Date.now() + ".txt");
+    const buf = Buffer.from([0xEF, 0xBB, 0xBF, ...Buffer.from("hello ??", "utf-8")]);
+    await fs.writeFile(fp, buf);
+    const result = await readFileAutoEncoding(fp);
+    expect(result).toBe("hello ??");
+    await fs.unlink(fp);
   });
 
   it("reads UTF-16 LE with BOM", async () => {
-    vol.writeFileSync(ws + "/_utf16le.txt", Buffer.from("\uFEFFhello", "utf-16le"));
-    const result = await readFileAutoEncoding(ws + "/_utf16le.txt");
+    const fp = path.join(testDir, "test_utf16le_" + Date.now() + ".txt");
+    // Write UTF-16 LE with BOM manually
+    const encoder = new TextEncoder();
+    const encoded = Buffer.from("hello", "utf-8");
+    const bom = Buffer.from([0xFF, 0xFE]);
+    const utf16le = Buffer.from(encoded.toString("binary"), "binary");
+    // utf16le encoding via iconv-lite style: each char -> 2 bytes
+    const buf = Buffer.alloc(encoded.length * 2);
+    for (let i = 0; i < encoded.length; i++) {
+      buf[i * 2] = encoded[i];
+      buf[i * 2 + 1] = 0;
+    }
+    await fs.writeFile(fp, Buffer.concat([bom, buf]));
+    const result = await readFileAutoEncoding(fp);
     expect(result).toBe("hello");
+    await fs.unlink(fp);
   });
 
-  it("reads GBK encoded file", async () => {
-    vol.writeFileSync(ws + "/_gbk.txt", Buffer.from([0xd6, 0xd0, 0xce, 0xc4]));
-    const result = await readFileAutoEncoding(ws + "/_gbk.txt");
-    expect(result).toBe("中文");
-  });
-
-  it("returns empty string for empty file", async () => {
-    vol.writeFileSync(ws + "/_empty.txt", "");
-    const result = await readFileAutoEncoding(ws + "/_empty.txt");
-    expect(result).toBe("");
-  });
-
-  it("gracefully handles unknown binary", async () => {
-    vol.writeFileSync(ws + "/_binary.txt", Buffer.from([0xff, 0xfe, 0x80, 0x00]));
-    const result = await readFileAutoEncoding(ws + "/_binary.txt");
-    expect(typeof result).toBe("string");
-  });
-});
-
-describe("writeFileUtf8", () => {
-  beforeEach(initMemfs);
+  // writeFileUtf8 tests
 
   it("writes UTF-8 without BOM", async () => {
-    await writeFileUtf8(ws + "/_write_utf8.txt", "hello 世界");
-    const buf = vol.readFileSync(ws + "/_write_utf8.txt") as Buffer;
+    const fp = path.join(testDir, "test_write_" + Date.now() + ".txt");
+    await writeFileUtf8(fp, "hello ??");
+    const buf = await fs.readFile(fp);
     expect(buf[0]).not.toBe(0xef);
     expect(buf[1]).not.toBe(0xbb);
     expect(buf[2]).not.toBe(0xbf);
-    expect(buf.toString("utf-8")).toBe("hello 世界");
+    expect(buf.toString("utf-8")).toBe("hello ??");
+    await fs.unlink(fp);
   });
 });

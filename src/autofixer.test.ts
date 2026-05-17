@@ -46,9 +46,23 @@ describe("autofixInput", () => {
     const result = autofixInput(input);
     expect(result).toContain(bt + "\n" + searchH);
     expect(result).toContain(replF + "\n" + bt);
-    // Exactly one pair of fences
     const count = (result.match(/```/g) || []).length;
     expect(count).toBe(2);
+  });
+
+  it("adds missing fences around multiple files separated by non-marker line", () => {
+    const input = [
+      "a.ts",
+      searchH, "a", sep, "a'", replF,
+      "",
+      "b.ts",
+      searchH, "b", sep, "b'", replF,
+    ].join("\n");
+    const result = autofixInput(input);
+    expect(result).toContain("a.ts");
+    expect(result).toContain("b.ts");
+    const fences = result.match(/```/g);
+    expect(fences).toHaveLength(4);
   });
 
   // Fix 3: missing keywords
@@ -87,11 +101,10 @@ describe("autofixInput", () => {
       replF, bt,
     ].join("\n");
     const result = autofixInput(input);
-    // Common 4-space indent stripped from SEARCH lines
     const searchSection = result.split(sep)[0];
     expect(searchSection).toContain("def foo():");
-    expect(searchSection).toContain("    pass"); // 8-4 = 4 remaining
-    expect(searchSection).not.toContain("    def foo():"); // 4 stripped
+    expect(searchSection).toContain("    pass");
+    expect(searchSection).not.toContain("    def foo():");
   });
 
   it("preserves empty lines during indent stripping", () => {

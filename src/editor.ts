@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { readFileAutoEncoding, writeFileUtf8 } from "./encoding.js";
-import type { EditBlock, FileEdit, SimulationResult } from "./types.js";
+import type { EditBlock, FileEdit, SimulationResult, EditMode } from "./types.js";
 import { findMatchMatch, findSearchMatch } from "./matcher.js";
 
 // ── Phase 1: Sequential simulation in virtual buffer ──
@@ -83,6 +83,13 @@ export async function simulateEdits(
           currentContent: virtualContent,
         });
         break;
+      }
+
+      // Record match info for feedback
+      const firstSearchLine = block.searchText.split("\n").find((l) => l.trim().length > 0);
+      if (firstSearchLine) {
+        if (!result.matches) result.matches = [];
+        result.matches.push({ filePath, matchedLine: firstSearchLine.trim() });
       }
 
       virtualContent =

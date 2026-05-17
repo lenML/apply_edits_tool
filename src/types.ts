@@ -30,4 +30,6 @@ export interface SimulationResult {
   valid: boolean;
   files: Map<string, string>;
   errors: SimulationError[];
+  /** Info about what was matched (first SEARCH line per file) */
+  matches?: { filePath: string; matchedLine: string }[];
 }
