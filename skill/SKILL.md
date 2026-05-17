@@ -1,27 +1,35 @@
 ---
 name: apply-edits
-description: Batch file editing with SEARCH/REPLACE and MATCH/REPLACE patterns, supporting atomic transactions and sequential simulation across multiple edits on the same file. Use when Codex needs to edit files via shell command using npx @lenml/apply_edits, for multi-file batch edits that need atomic validation before writing, or when edits must be simulated sequentially on the same file.
+description: Batch file editing with SEARCH/REPLACE and MATCH/REPLACE patterns, supporting atomic transactions and sequential simulation across multiple edits on the same file. Use when Codex needs to edit files via shell command using apply-edits, for multi-file batch edits that need atomic validation before writing, or when edits must be simulated sequentially on the same file.
 ---
 
 # apply-edits
 
-A CLI tool for batch file editing with SEARCH/REPLACE and MATCH/REPLACE (with `...` wildcard) patterns.
+Global CLI tool for batch file editing with SEARCH/REPLACE and MATCH/REPLACE (with `...` wildcard) patterns.
 Supports atomic transactions (all blocks validate before any file is written), sequential simulation
 across multiple edits on the same file, encoding auto-detection, and autofix of malformed input.
 
 ## Usage
 
+**Must be globally installed first:**
+
 ```bash
-npx @lenml/apply_edits [--workspace <dir>] '<command>'
+npm install -g @lenml/apply_edits
+```
+
+Then use directly:
+
+```bash
+apply-edits [--workspace <dir>] '<command>'
 ```
 
 If `<command>` is omitted, reads from stdin (pipe-friendly).
 
-| Argument            | Description                                                |
-| ------------------- | ---------------------------------------------------------- |
+| Argument | Description |
+|----------|-------------|
 | `--workspace <dir>` | Root directory for file paths (default: current directory) |
-| `<command>`         | The edit command string as positional argument             |
-| `--help`            | Show help                                                  |
+| `<command>` | The edit command string as positional argument |
+| `--help` | Show help |
 
 ## Command Format
 
@@ -40,7 +48,7 @@ path/to/file.ext
 
 MATCH mode (with `...` wildcard, non-greedy):
 
-```
+````
 path/to/file.ext
 <<<<<<< MATCH
 <anchor lines with ...
@@ -48,7 +56,7 @@ for skipping>
 =======
 <replacement>
 >>>>>>> REPLACE
-```
+````
 
 ### Rules
 
@@ -71,7 +79,7 @@ for skipping>
 ### Single file, single edit
 
 ````bash
-npx @lenml/apply_edits --workspace . '
+apply-edits --workspace . '
 src/main.py
 ```python
 <<<<<<< SEARCH
@@ -86,7 +94,7 @@ print("hello world")
 ### Multiple files, MATCH mode
 
 ````bash
-npx @lenml/apply_edits --workspace . '
+apply-edits --workspace . '
 src/utils.py
 <<<<<<< MATCH
 def add(a, b):
@@ -111,13 +119,13 @@ new content
 ### Pipe from file
 
 ```bash
-cat edits.txt | npx @lenml/apply_edits --workspace .
+cat edits.txt | apply-edits --workspace .
 ```
 
 ### Multiple edits on the same file (sequential)
 
 ````bash
-npx @lenml/apply_edits --workspace . '
+apply-edits --workspace . '
 src/app.ts
 ```typescript
 <<<<<<< SEARCH
@@ -141,11 +149,11 @@ function updated() {
 
 ## Library API
 
-| Entry     | Import                                                                                                                                           |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| CLI       | `npx @lenml/apply_edits` or `apply-edits` (if installed)                                                                                         |
-| Parser    | `import { parseCommand } from "@lenml/apply_edits"`                                                                                              |
-| Editor    | `import { simulateEdits, applyEditsAtomic } from "@lenml/apply_edits"`                                                                           |
-| Encoding  | `import { readFileAutoEncoding, writeFileUtf8 } from "@lenml/apply_edits"`                                                                       |
-| Autofixer | `import { autofixInput } from "@lenml/apply_edits"`                                                                                              |
-| Feedback  | `import { formatSuccess, formatParseError, formatNoCommand, formatNoEdits, formatSimulationErrors, formatApplyError } from "@lenml/apply_edits"` |
+| Entry | Import |
+|-------|--------|
+| CLI | `apply-edits` (after `npm install -g @lenml/apply_edits`) |
+| Parser | `import { parseCommand } from "@lenml/apply_edits"` |
+| Editor | `import { simulateEdits, applyEditsAtomic } from "@lenml/apply_edits"` |
+| Encoding | `import { readFileAutoEncoding, writeFileUtf8 } from "@lenml/apply_edits"` |
+| Autofixer | `import { autofixInput } from "@lenml/apply_edits"` |
+| Feedback | `import { formatSuccess, formatParseError, formatNoCommand, formatNoEdits, formatSimulationErrors, formatApplyError } from "@lenml/apply_edits"` |

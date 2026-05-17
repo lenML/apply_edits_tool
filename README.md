@@ -4,12 +4,20 @@
 
 # @lenml/apply_edits
 
-Batch file editing with SEARCH/REPLACE and MATCH/REPLACE patterns.
+Global CLI tool for batch file editing with SEARCH/REPLACE and MATCH/REPLACE patterns.
 Atomic transactions, sequential same-file simulation, encoding auto-detection.
+
+## Install
+
+```bash
+npm install -g @lenml/apply_edits
+```
+
+## Usage
 
 ````bash
 # Edit files in one command
-npx @lenml/apply_edits --workspace . '
+apply-edits --workspace . '
 src/main.py
 ```python
 <<<<<<< SEARCH
@@ -21,7 +29,7 @@ print("hello world")
 '
 
 # Or pipe from stdin
-cat edits.txt | npx @lenml/apply_edits --workspace .
+cat edits.txt | apply-edits --workspace .
 ````
 
 ## Install as Agent Skill
