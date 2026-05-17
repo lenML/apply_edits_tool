@@ -80,7 +80,12 @@ function parseEditBlocks(lines: string[], filePath: string): EditBlock[] {
     idx++;
 
     const searchLines: string[] = [];
-    while (idx < n && lines[idx].trim() !== "=======") {
+    let searchDepth = 0;
+    while (idx < n) {
+      const sTrimmed = lines[idx].trim();
+      if (sTrimmed.startsWith("<<<<<<<")) searchDepth++;
+      else if (sTrimmed.startsWith(">>>>>>>")) searchDepth--;
+      if (sTrimmed === "=======" && searchDepth === 0) break;
       searchLines.push(lines[idx]);
       idx++;
     }
