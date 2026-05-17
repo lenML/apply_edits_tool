@@ -69,12 +69,19 @@ export async function simulateEdits(
       }
 
       if (!match) {
-        const prefix =
-          i === 0
-            ? `${block.mode} block not found`
-            : `${block.mode} block not found after applying previous ${i} block(s)`;
+        const prefix = i === 0
+          ? `${block.mode} block not found`
+          : `${block.mode} block not found after applying previous ${i} block(s)`;
         result.valid = false;
-        result.errors.push({ filePath, error: `Block ${i + 1}/${totalBlocks}: ${prefix}` });
+        result.errors.push({
+          filePath,
+          error: `Block ${i + 1}/${totalBlocks}: ${prefix}`,
+          blockIndex: i + 1,
+          totalBlocks,
+          searchText: block.searchText,
+          replaceText: block.replaceText,
+          currentContent: virtualContent,
+        });
         break;
       }
 

@@ -5,6 +5,14 @@ import { createInterface } from "node:readline";
 import { autofixInput } from "./autofixer.js";
 import { parseCommand } from "./parser.js";
 import { simulateEdits, applyEditsAtomic } from "./editor.js";
+import {
+  formatNoCommand,
+  formatParseError,
+  formatNoEdits,
+  formatSimulationErrors,
+  formatApplyError,
+  formatSuccess,
+} from "./feedback.js";
 
 async function readStdin(): Promise<string> {
   const rl = createInterface({ input: process.stdin });
@@ -76,7 +84,7 @@ async function main(): Promise<void> {
   }
 
   if (!command || command.trim() === "") {
-    console.error("Error: No command provided (use --command, --command -, or pipe to stdin)");
+    console.error(formatNoCommand());
     process.exit(1);
   }
 
@@ -91,31 +99,28 @@ async function main(): Promise<void> {
   try {
     fileEdits = parseCommand(fixedCommand);
   } catch (err: any) {
-    console.error(`Parse error: ${err.message}`);
+    console.error(formatParseError(err.message, fixedCommand));
     process.exit(1);
   }
 
   if (fileEdits.length === 0) {
-    console.error("Error: No valid edit blocks found");
+    console.error(formatNoEdits());
     process.exit(1);
   }
 
   const simulation = await simulateEdits(fileEdits, workspace!);
 
   if (!simulation.valid) {
-    console.error("Validation failed:");
-    for (const e of simulation.errors) {
-      console.error(`  ${e.filePath}: ${e.error}`);
-    }
+    console.error(formatSimulationErrors(simulation.errors));
     process.exit(1);
   }
 
   try {
     await applyEditsAtomic(simulation.files, workspace!);
-    console.log(`Successfully applied edits to ${simulation.files.size} file(s).`);
+    console.log(formatSuccess(simulation.files.size));
     process.exit(0);
   } catch (err: any) {
-    console.error(`Apply error: ${err.message}`);
+    console.error(formatApplyError(err.message));
     process.exit(1);
   }
 }
