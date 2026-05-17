@@ -1,18 +1,75 @@
 {
   "name": "@lenml/apply_edits",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "description": "A CLI tool for batch file editing with SEARCH/REPLACE and MATCH/REPLACE patterns, supporting atomic transactions and cross-platform compatibility. Designed for AI coding assistants like Codex.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./cli": {
+      "import": {
+        "types": "./dist/cli.d.ts",
+        "default": "./dist/cli.js"
+      },
+      "require": {
+        "types": "./dist/cli.d.cts",
+        "default": "./dist/cli.cjs"
+      }
+    }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "bin": {
+    "apply-edits": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/"
+  },
+  "keywords": [
+    "code-editing",
+    "search-replace",
+    "cli",
+    "codex",
+    "ai-tools",
+    "vibe-coding",
+    "file-editing"
+  ],
+  "author": "lenml",
+  "license": "MIT",
   "packageManager": "pnpm@10.12.4",
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^25.8.0",
+    "@vitest/coverage-v8": "^4.1.6",
+    "eslint": "^9.0.0",
+    "prettier": "^3.8.3",
+    "tsup": "^8.0.0",
     "tsx": "^4.22.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.1.6"
   }
 }

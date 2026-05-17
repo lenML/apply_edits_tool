@@ -1,2 +1,8 @@
+httpsProxy: http://nas:7890/
+
 onlyBuiltDependencies:
   - esbuild
+
+proxy: http://nas:7890/
+
+storeDir: O:\.pnpm-store\v10
