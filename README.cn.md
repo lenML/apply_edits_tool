@@ -37,7 +37,7 @@ cat edits.txt | apply-edits --workspace .
 发送以下任一消息给 AI 编程助手：
 
 ```
-安装 https://github.com/lenML/apply_edits_tool/skill/SKILL.md
+安装 https://raw.githubusercontent.com/lenML/apply_edits_tool/refs/heads/main/skill/SKILL.md
 ```
 
 或者通过 CDN：

@@ -37,7 +37,7 @@ cat edits.txt | apply-edits --workspace .
 Send this message to your AI coding agent (any one works):
 
 ```
-install it: https://github.com/lenML/apply_edits_tool/skill/SKILL.md
+install it: https://raw.githubusercontent.com/lenML/apply_edits_tool/refs/heads/main/skill/SKILL.md
 ```
 
 Or via CDN:
