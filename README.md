@@ -1,3 +1,7 @@
+[English](README.md) | [中文](README.cn.md)
+
+---
+
 # @lenml/apply_edits
 
 Batch file editing with SEARCH/REPLACE and MATCH/REPLACE patterns.
