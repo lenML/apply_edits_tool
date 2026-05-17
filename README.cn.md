@@ -16,8 +16,8 @@ npm install -g @lenml/apply_edits
 ## 使用
 
 ````bash
-# 一步编辑多个文件
-apply-edits --workspace . '
+# 管道输入（推荐）
+apply-edits --workspace . << 'EOF'
 src/main.py
 ```python
 <<<<<<< SEARCH
@@ -26,16 +26,26 @@ print("hello")
 print("hello world")
 >>>>>>> REPLACE
 ```
-'
+EOF
 
-# 或通过管道传入
+# 或从文件管道
 cat edits.txt | apply-edits --workspace .
 ````
 
 ## 安装为 Agent Skill
 
-将以下消息发送给你的 AI 编程助手：
+发送以下任一消息给 AI 编程助手：
 
 ```
 安装 https://github.com/lenML/apply_edits_tool/skill/SKILL.md
+```
+
+或者通过 CDN：
+
+```
+安装 https://cdn.jsdelivr.net/npm/@lenml/apply_edits/skill/SKILL.md
+```
+
+```
+安装 https://unpkg.com/@lenml/apply_edits/skill/SKILL.md
 ```

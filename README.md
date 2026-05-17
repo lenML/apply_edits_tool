@@ -16,8 +16,8 @@ npm install -g @lenml/apply_edits
 ## Usage
 
 ````bash
-# Edit files in one command
-apply-edits --workspace . '
+# Pipe from stdin (recommended)
+apply-edits --workspace . << 'EOF'
 src/main.py
 ```python
 <<<<<<< SEARCH
@@ -26,16 +26,26 @@ print("hello")
 print("hello world")
 >>>>>>> REPLACE
 ```
-'
+EOF
 
-# Or pipe from stdin
+# Or pipe from file
 cat edits.txt | apply-edits --workspace .
 ````
 
 ## Install as Agent Skill
 
-Send this message to your AI coding agent:
+Send this message to your AI coding agent (any one works):
 
 ```
 install it: https://github.com/lenML/apply_edits_tool/skill/SKILL.md
+```
+
+Or via CDN:
+
+```
+install it: https://cdn.jsdelivr.net/npm/@lenml/apply_edits/skill/SKILL.md
+```
+
+```
+install it: https://unpkg.com/@lenml/apply_edits/skill/SKILL.md
 ```
