@@ -33,11 +33,11 @@ npx @lenml/apply_edits --help
 apply-edits [--workspace <dir>] [<command>]
 ```
 
-| Argument | Description |
-|----------|-------------|
-| `--workspace <dir>` | Root directory for file paths (default: current directory) |
-| `<command>` | Edit command string as positional argument. If omitted, reads from stdin (pipe-friendly). |
-| `--help` | Show help information |
+| Argument            | Description                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| `--workspace <dir>` | Root directory for file paths (default: current directory)                                |
+| `<command>`         | Edit command string as positional argument. If omitted, reads from stdin (pipe-friendly). |
+| `--help`            | Show help information                                                                     |
 
 ### Exit codes
 
@@ -88,7 +88,7 @@ def fib(n):
 
 ### 1. Direct command string
 
-```bash
+````bash
 apply-edits --workspace /my/project '
 src/main.py
 ```python
@@ -99,7 +99,7 @@ print("hello world")
 >>>>>>> REPLACE
 ```
 '
-```
+````
 
 ### 2. Pipe from file
 
@@ -109,7 +109,7 @@ cat edits.txt | apply-edits --workspace .
 
 ### 3. Multiple files and MATCH mode
 
-```bash
+````bash
 apply-edits --workspace . '
 src/utils.py
 ```python
@@ -132,7 +132,7 @@ new content
 >>>>>>> REPLACE
 ```
 '
-```
+````
 
 ## Development
 
