@@ -32,23 +32,29 @@ const encodings = [
  *   3. Common CJK encodings via TextDecoder
  *   4. Fallback to latin1
  */
+// Normalize CRLF to LF for consistency
+function normalizeCRLF(s: string): string { return s.replace(/\r\n/g, "\n"); }
+
 export function decodeBuffer(buffer: Buffer): string {
   if (buffer.length === 0) return "";
 
+  // Normalize CRLF to LF
+  // (handle the common case where input comes as UTF-16 LE from PowerShell pipes)
+
   // 1. BOM detection
   if (buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
-    return buffer.toString("utf-8", 3);
+    return normalizeCRLF(buffer.toString("utf-8", 3));
   }
   if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) {
-    return new TextDecoder("utf-16le").decode(buffer.subarray(2));
+    return normalizeCRLF(new TextDecoder("utf-16le").decode(buffer.subarray(2)));
   }
   if (buffer.length >= 2 && buffer[0] === 0xfe && buffer[1] === 0xff) {
-    return new TextDecoder("utf-16be").decode(buffer.subarray(2));
+    return normalizeCRLF(new TextDecoder("utf-16be").decode(buffer.subarray(2)));
   }
 
   // 2. UTF-8 validity
   if (isUtf8(buffer)) {
-    return buffer.toString("utf-8");
+    return normalizeCRLF(buffer.toString("utf-8"));
   }
 
   // 3. Try CJK / common encodings
@@ -57,7 +63,7 @@ export function decodeBuffer(buffer: Buffer): string {
       const decoder = new TextDecoder(enc, { fatal: false });
       const decoded = decoder.decode(buffer);
       if (!decoded.includes("\uFFFD")) {
-        return decoded;
+        return normalizeCRLF(decoded);
       }
     } catch {
       continue;
@@ -65,12 +71,12 @@ export function decodeBuffer(buffer: Buffer): string {
   }
 
   // 4. Fallback: latin1
-  return buffer.toString("latin1");
+  return normalizeCRLF(buffer.toString("latin1"));
 }
 
 export async function readFileAutoEncoding(filePath: string): Promise<string> {
   const buffer = await fs.readFile(filePath);
-  return decodeBuffer(buffer);
+  return normalizeCRLF(decodeBuffer(buffer));
 }
 
 

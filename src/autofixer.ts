@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Autofixes common formatting issues in edit commands before parsing,
  * to improve the success rate of edit application.
  */
@@ -19,12 +19,20 @@ function fixPathInsideFence(input: string): string {
   const lines = input.split("\n");
   const out: string[] = [];
   let i = 0;
+  let insideBlockDepth = 0;
 
   while (i < lines.length) {
     const cur = lines[i];
     const trimmed = cur.trim();
 
-    if (trimmed.startsWith("```")) {
+    // Track SEARCH/MATCH/REPLACE block boundaries
+    if (trimmed.startsWith("<<<<<<<")) {
+      insideBlockDepth++;
+    } else if (trimmed.startsWith(">>>>>>>")) {
+      insideBlockDepth--;
+    }
+
+    if (insideBlockDepth === 0 && trimmed.startsWith("```")) {
       // Look ahead past blank lines for a non-blank, non-fence, non-marker line
       let j = i + 1;
       while (j < lines.length && !lines[j].trim()) j++;
@@ -185,60 +193,6 @@ function fixMarkers(input: string): string {
 //   new code                       new code
 //   >>>>>>> REPLACE                >>>>>>> REPLACE
 
-function fixSearchIndentation(input: string): string {
-  const lines = input.split("\n");
-  const out: string[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const trimmed = lines[i].trim();
-    if (trimmed.startsWith("<<<<<<< SEARCH") || trimmed.startsWith("<<<<<<< MATCH")) {
-      out.push(lines[i]);
-      i++;
-
-      // Collect search lines until "======="
-      const searchLines: string[] = [];
-      while (i < lines.length && lines[i].trim() !== "=======") {
-        searchLines.push(lines[i]);
-        i++;
-      }
-
-      // Compute minimum common leading whitespace among non-empty lines
-      const nonEmpty = searchLines.filter((l) => l.trim().length > 0);
-      if (nonEmpty.length > 0) {
-        const indentLevels = nonEmpty.map((l) => l.length - l.trimStart().length);
-        const minIndent = Math.min(...indentLevels);
-        if (minIndent > 0) {
-          for (const sl of searchLines) {
-            if (sl.trim().length > 0) {
-              out.push(sl.slice(minIndent));
-            } else {
-              out.push(sl);
-            }
-          }
-          // Push "=======" and continue
-          if (i < lines.length) {
-            out.push(lines[i]);
-            i++;
-          }
-          continue;
-        }
-      }
-
-      // No dedent needed — flush collected search lines
-      out.push(...searchLines);
-      if (i < lines.length) {
-        out.push(lines[i]);
-        i++;
-      }
-      continue;
-    }
-    out.push(lines[i]);
-    i++;
-  }
-
-  return out.join("\n");
-}
 
 // ── Public entry point ──
 
@@ -250,13 +204,13 @@ function fixSearchIndentation(input: string): string {
  *   1. File path inside code fence → move path before fence
  *   2. Missing code fences → wrap blocks in ```
  *   3. Missing SEARCH/REPLACE keywords → default to SEARCH
- *   4. Excessive search-text indentation → strip common leading whitespace
  */
 export function autofixInput(input: string): string {
   let result = input;
+  // Normalize CRLF to LF before processing
+  result = result.replace(/\r\n/g, "\n");
   result = fixPathInsideFence(result);
   result = addMissingFences(result);
   result = fixMarkers(result);
-  result = fixSearchIndentation(result);
   return result;
 }

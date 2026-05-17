@@ -60,6 +60,8 @@ function printHelp(): void {
 --version           Show version number
 --dry-run           Validate edits without applying them
 
+
+
 The command format consists of one or more blocks:
 
 path/to/file.py
@@ -113,7 +115,7 @@ async function main(): Promise<void> {
       i++;
       break;
     } else if (!args[i].startsWith("--")) {
-      // First positional arg = command
+      // Treat as edit command
       command = args[i];
       i++;
       break;

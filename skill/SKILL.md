@@ -23,8 +23,16 @@ npm install -g @lenml/apply_edits
 
 ### PowerShell
 
+**Before piping, set encoding to UTF-8** (PowerShell 5.1 defaults to UTF-16 LE which garbles non-ASCII text):
+
+```powershell
+$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+```
+
+Then pipe the here-string directly:
+
 ````powershell
-$edits = @'
+@'
 path/to/file.ext
 ```markdown
 <<<<<<< SEARCH
@@ -33,18 +41,17 @@ old code
 new code
 >>>>>>> REPLACE
 ```
-'@
-$edits | apply-edits --workspace .
+'@ | apply-edits --workspace .
 ````
 
-### Bash / Unix
+### Bash / Unix### Bash / Unix### Bash / Unix
 
 ````bash
 apply-edits --workspace . << 'EOF'
 path/to/file.ext
 ```markdown
 <<<<<<< SEARCH
-old code
+new code
 =======
 new code
 >>>>>>> REPLACE
@@ -79,12 +86,15 @@ MATCH mode (with `...` wildcard, non-greedy):
 
 ````
 path/to/file.ext
+
+```
 <<<<<<< MATCH
 <anchor lines with ...
 for skipping>
 =======
 <replacement>
 >>>>>>> REPLACE
+```
 ````
 
 ### Rules
@@ -141,6 +151,8 @@ EOF
 ````bash
 apply-edits --workspace . << 'EOF'
 src/utils.py
+
+```
 <<<<<<< MATCH
 def add(a, b):
 ...
@@ -149,6 +161,7 @@ def add(a, b):
 def add(a, b):
     return a + b
 >>>>>>> REPLACE
+```
 
 README.md
 ```markdown
@@ -187,6 +200,18 @@ EOF
 cat edits.txt | apply-edits --workspace .
 ```
 
+## Companion Tools
+
+### `read-file <path>`
+
+Read a file with automatic encoding detection (BOM -> UTF-8 -> CJK -> latin1)
+and print as UTF-8. Avoids garbled output from raw `Get-Content` or Node.js fs.
+
+### `write-file <path> [content]`
+
+Write content as UTF-8 without BOM. Omit content to read from stdin.
+Pipe-friendly: `read-file src | write-file dest`
+
 ## Exit codes
 
 - `0` -- all edits applied successfully
@@ -197,6 +222,8 @@ cat edits.txt | apply-edits --workspace .
 | Entry | Import |
 |-------|--------|
 | CLI | `apply-edits` (after `npm install -g @lenml/apply_edits`) |
+| CLI (read file) | `read-file <path>` |
+| CLI (write file) | `write-file <path> [content]` |
 | Parser | `import { parseCommand } from "@lenml/apply_edits"` |
 | Editor | `import { simulateEdits, applyEditsAtomic } from "@lenml/apply_edits"` |
 | Encoding | `import { readFileAutoEncoding, writeFileUtf8 } from "@lenml/apply_edits"` |

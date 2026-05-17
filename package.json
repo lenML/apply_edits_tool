@@ -29,7 +29,10 @@
     }
   },
   "bin": {
-    "apply-edits": "./dist/cli.js"
+    "apply-edits": "./dist/cli.js",
+    "read-file": "./dist/read-file-cli.js",
+    "write-file": "./dist/write-file-cli.js",
+    "exec-js-edits": "./dist/exec-js-edits-cli.js"
   },
   "files": [
     "dist",

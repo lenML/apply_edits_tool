@@ -87,42 +87,6 @@ describe("autofixInput", () => {
     expect(result).toContain(replF);
   });
 
-  // Fix 4: search indentation
-
-  it("strips common leading whitespace from SEARCH lines (fix 4)", () => {
-    const input = [
-      "test.py", bt,
-      searchH,
-      "    def foo():",
-      "        pass",
-      sep,
-      "def bar():",
-      "    pass",
-      replF, bt,
-    ].join("\n");
-    const result = autofixInput(input);
-    const searchSection = result.split(sep)[0];
-    expect(searchSection).toContain("def foo():");
-    expect(searchSection).toContain("    pass");
-    expect(searchSection).not.toContain("    def foo():");
-  });
-
-  it("preserves empty lines during indent stripping", () => {
-    const input = [
-      "test.py", bt,
-      searchH,
-      "    foo",
-      "",
-      "    bar",
-      sep,
-      "new", replF, bt,
-    ].join("\n");
-    const result = autofixInput(input);
-    expect(result).toContain("foo");
-    expect(result).toContain("bar");
-    expect(result).toContain("\n\n");
-  });
-
   // Combined
 
   it("fixes path inside fence + missing keywords together", () => {

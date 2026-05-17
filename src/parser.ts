@@ -1,7 +1,9 @@
 import type { EditBlock, EditMode, FileEdit } from "./types.js";
 
 export function parseCommand(command: string): FileEdit[] {
-  const lines = command.split(/\r?\n/);
+  // Normalize CRLF to LF first
+  const normalized = command.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
   const fileEdits: FileEdit[] = [];
   let i = 0;
 
@@ -88,7 +90,17 @@ function parseEditBlocks(lines: string[], filePath: string): EditBlock[] {
     idx++;
 
     const replaceLines: string[] = [];
-    while (idx < n && !lines[idx].trim().startsWith(">>>>>>> REPLACE")) {
+    let replaceDepth = 0;
+    while (idx < n) {
+      const rTrimmed = lines[idx].trim();
+      // Track nesting of <<<<<<< / >>>>>>> inside REPLACE content
+      // Only stop when we find a >>>>>>> that closes OUR block
+      if (rTrimmed.startsWith("<<<<<<<")) {
+        replaceDepth++;
+      } else if (rTrimmed.startsWith(">>>>>>>")) {
+        if (replaceDepth === 0) break; // found OUR closing marker
+        replaceDepth--;
+      }
       replaceLines.push(lines[idx]);
       idx++;
     }
