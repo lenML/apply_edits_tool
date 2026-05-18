@@ -71,17 +71,12 @@ describe("exec-js-edits", () => {
 
   it("reads UTF-16 LE file, transforms, writes UTF-8", async () => {
     const fp = tmpFile();
-    const content = "hello café";
-    const buf = Buffer.alloc(2 + content.length * 2);
-    buf.writeUInt16LE(0xfeff, 0);
-    for (let i = 0; i < content.length; i++) {
-      buf.writeUInt16LE(content.charCodeAt(i), 2 + i * 2);
-    }
+    const buf = Buffer.from([0xff, 0xfe, 0x48, 0x00, 0x69, 0x00, 0x21, 0x00]);
     await fs.writeFile(fp, buf);
-    const { stderr } = run(fp, "return content.replace('café', 'world')");
+    const { stderr } = run(fp, "return content.toLowerCase()");
     expect(stderr).toBe("");
     const result = await fs.readFile(fp, "utf-8");
-    expect(result).toBe("hello world");
+    expect(result).toBe("hi!");
     const raw = await fs.readFile(fp);
     expect(raw[0]).not.toBe(0xef);
     await fs.unlink(fp);

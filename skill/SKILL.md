@@ -59,7 +59,26 @@ If the edit command is omitted, reads from stdin by default.
 
 Each command contains one or more file blocks.
 
-SEARCH mode — replaces exact code:
+**For AI agents, MATCH mode is recommended** — it only needs a few anchor lines
+and skips irrelevant details with `...`, making edits more resilient:
+
+```
+path/to/file.ext
+<<<<<<< MATCH
+func foo() {
+...
+}
+=======
+func foo() {
+  // new body
+}
+>>>>>>> REPLACE
+```
+
+The `...` wildcard (non-greedy) matches zero or more lines between anchors.
+Use it to skip variable parts: imports, function bodies, long arg lists, etc.
+
+SEARCH mode for exact-text matches (use when you need precise control):
 
 ```
 path/to/file.ext
@@ -70,29 +89,16 @@ path/to/file.ext
 >>>>>>> REPLACE
 ```
 
-MATCH mode — uses `...` wildcard (non-greedy) to skip variable/unimportant lines:
-
-```
-path/to/file.ext
-<<<<<<< MATCH
-<anchor lines with ...
-for skipping>
-=======
-<replacement>
->>>>>>> REPLACE
-```
-
-> **Note:** ``` code fences around the block are **optional**. The autofixer adds them
-> automatically if missing. Fences may still appear in AI-generated or legacy input and
-> are handled transparently.
+> **Note:** ``` code fences around blocks are **optional**. The autofixer adds them
+> automatically if missing.
 
 ### Rules
 
-- **File path** — single line, absolute or relative to workspace
+- **File path** — single line, absolute or relative to workspace; **must be repeated for every edit block**, even on the same file
 - **No blank line** between file path and `<<<<<<<`
 - **Blocks** — one or more `<<<<<<<` ... `>>>>>>>` blocks per file
-- **SEARCH** — lines matched ignoring leading/trailing whitespace
-- **MATCH** — `...` matches zero or more lines (non-greedy); other lines are anchors in order
+- **SEARCH** — lines matched exactly (leading/trailing whitespace trimmed)
+- **MATCH** — `...` matches zero or more lines (non-greedy); anchor lines must match in order
 - **Atomic** — all blocks validate before any file is written; failure aborts the entire operation
 
 ### Error handling
@@ -155,6 +161,8 @@ EOF
 
 ### Multiple edits on the same file (Bash)
 
+> **Important:** Each edit block must repeat the file path, even when editing the same file.
+
 ````bash
 apply-edits --workspace . << 'EOF'
 src/app.ts
@@ -163,6 +171,7 @@ function oldOne() {
 =======
 function newOne() {
 >>>>>>> REPLACE
+src/app.ts
 <<<<<<< SEARCH
 function another() {
 =======
