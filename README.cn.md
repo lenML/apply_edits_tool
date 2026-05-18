@@ -21,19 +21,19 @@ npm install -g @lenml/apply_edits
 
 完整文档见 [SKILL.md](skill/SKILL.md) — 命令格式、MATCH 模式、多文件操作、错误处理、API 等。
 
-PowerShell 7+ 基本示例（单引号 here-string 避免转义问题）：
+> **提示：** 代码块 fence 是可选的。autofixer 会自动补全。
+
+PowerShell 7+ 基本示例：
 
 ````powershell
-@'
+apply-edits --workspace . @'
 src/main.py
-```python
 <<<<<<< SEARCH
 print("hello")
 =======
 print("hello world")
 >>>>>>> REPLACE
-```
-'@ | apply-edits --workspace .
+'@
 ````
 
 或 heredoc（Bash）：
@@ -41,13 +41,11 @@ print("hello world")
 ````bash
 apply-edits --workspace . << 'EOF'
 src/main.py
-```python
 <<<<<<< SEARCH
 print("hello")
 =======
 print("hello world")
 >>>>>>> REPLACE
-```
 EOF
 ````
 

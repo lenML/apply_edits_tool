@@ -21,19 +21,19 @@ npm install -g @lenml/apply_edits
 
 See [SKILL.md](skill/SKILL.md) for full documentation — command format, MATCH mode, multiple files, error handling, and API.
 
-Basic example (PowerShell 7+, single-quoted here-string prevents escape issues):
+> **Tip:** Code fences around blocks are optional. The autofixer adds them if missing.
+
+Basic example (PowerShell 7+):
 
 ````powershell
-@'
+apply-edits --workspace . @'
 src/main.py
-```python
 <<<<<<< SEARCH
 print("hello")
 =======
 print("hello world")
 >>>>>>> REPLACE
-```
-'@ | apply-edits --workspace .
+'@
 ````
 
 Or via heredoc (Bash):
@@ -41,13 +41,11 @@ Or via heredoc (Bash):
 ````bash
 apply-edits --workspace . << 'EOF'
 src/main.py
-```python
 <<<<<<< SEARCH
 print("hello")
 =======
 print("hello world")
 >>>>>>> REPLACE
-```
 EOF
 ````
 

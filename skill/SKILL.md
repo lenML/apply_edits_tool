@@ -23,43 +23,31 @@ npm install -g @lenml/apply_edits
 
 ### PowerShell
 
-**Before piping, set encoding to UTF-8** (PowerShell 5.1 defaults to UTF-16 LE which garbles non-ASCII text):
-
-```powershell
-$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-```
-
-Then pipe the here-string directly:
-
 ````powershell
-@'
+apply-edits --workspace . @'
 path/to/file.ext
-```markdown
 <<<<<<< SEARCH
 old code
 =======
 new code
 >>>>>>> REPLACE
-```
-'@ | apply-edits --workspace .
+'@
 ````
 
-### Bash / Unix### Bash / Unix### Bash / Unix
+### Bash / Unix
 
 ````bash
 apply-edits --workspace . << 'EOF'
 path/to/file.ext
-```markdown
 <<<<<<< SEARCH
-new code
+old code
 =======
 new code
 >>>>>>> REPLACE
-```
 EOF
 ````
 
-If `<command>` is omitted entirely, reads from stdin by default.
+If the edit command is omitted, reads from stdin by default.
 
 | Argument | Description |
 |----------|-------------|
@@ -69,25 +57,23 @@ If `<command>` is omitted entirely, reads from stdin by default.
 
 ## Command Format
 
-Each command contains one or more file blocks. SEARCH mode:
+Each command contains one or more file blocks.
 
-````
+SEARCH mode — replaces exact code:
+
+```
 path/to/file.ext
-```[lang]
 <<<<<<< SEARCH
 <code to find>
 =======
 <replacement code>
 >>>>>>> REPLACE
 ```
-````
 
-MATCH mode (with `...` wildcard, non-greedy):
-
-````
-path/to/file.ext
+MATCH mode — uses `...` wildcard (non-greedy) to skip variable/unimportant lines:
 
 ```
+path/to/file.ext
 <<<<<<< MATCH
 <anchor lines with ...
 for skipping>
@@ -95,16 +81,19 @@ for skipping>
 <replacement>
 >>>>>>> REPLACE
 ```
-````
+
+> **Note:** ``` code fences around the block are **optional**. The autofixer adds them
+> automatically if missing. Fences may still appear in AI-generated or legacy input and
+> are handled transparently.
 
 ### Rules
 
-- **File path** -- single line, absolute or relative to workspace
-- **Code fence** -- immediately follows the file path (no blank lines)
-- **Edit blocks** -- one or more `<<<<<<<` ... `>>>>>>>` blocks per file
-- **SEARCH** -- lines matched ignoring leading/trailing whitespace
-- **MATCH** -- `...` matches zero or more lines (non-greedy); other lines are anchors in order
-- **Atomic** -- all blocks validate before any file is written; failure aborts the entire operation
+- **File path** — single line, absolute or relative to workspace
+- **No blank line** between file path and `<<<<<<<`
+- **Blocks** — one or more `<<<<<<<` ... `>>>>>>>` blocks per file
+- **SEARCH** — lines matched ignoring leading/trailing whitespace
+- **MATCH** — `...` matches zero or more lines (non-greedy); other lines are anchors in order
+- **Atomic** — all blocks validate before any file is written; failure aborts the entire operation
 
 ### Error handling
 
@@ -118,17 +107,14 @@ for skipping>
 ### Single file, single edit (PowerShell)
 
 ````powershell
-$edits = @'
+apply-edits --workspace . @'
 src/main.py
-```python
 <<<<<<< SEARCH
 print("hello")
 =======
 print("hello world")
 >>>>>>> REPLACE
-```
 '@
-$edits | apply-edits --workspace .
 ````
 
 ### Single file, single edit (Bash)
@@ -136,13 +122,11 @@ $edits | apply-edits --workspace .
 ````bash
 apply-edits --workspace . << 'EOF'
 src/main.py
-```python
 <<<<<<< SEARCH
 print("hello")
 =======
 print("hello world")
 >>>>>>> REPLACE
-```
 EOF
 ````
 
@@ -151,8 +135,6 @@ EOF
 ````bash
 apply-edits --workspace . << 'EOF'
 src/utils.py
-
-```
 <<<<<<< MATCH
 def add(a, b):
 ...
@@ -161,16 +143,13 @@ def add(a, b):
 def add(a, b):
     return a + b
 >>>>>>> REPLACE
-```
 
 README.md
-```markdown
 <<<<<<< SEARCH
 old content
 =======
 new content
 >>>>>>> REPLACE
-```
 EOF
 ````
 
@@ -179,7 +158,6 @@ EOF
 ````bash
 apply-edits --workspace . << 'EOF'
 src/app.ts
-```typescript
 <<<<<<< SEARCH
 function oldOne() {
 =======
@@ -190,7 +168,6 @@ function another() {
 =======
 function updated() {
 >>>>>>> REPLACE
-```
 EOF
 ````
 
@@ -212,10 +189,23 @@ and print as UTF-8. Avoids garbled output from raw `Get-Content` or Node.js fs.
 Write content as UTF-8 without BOM. Omit content to read from stdin.
 Pipe-friendly: `read-file src | write-file dest`
 
+### `exec-js-edits [--dry-run] <file> <js-code>`
+
+Read a file with encoding detection, run a JS transform on its content, write back as UTF-8.
+The JS code receives `content` (string) and must return a string.
+
+```bash
+# Replace foo with bar
+exec-js-edits main.ts "content.replace(/foo/g, 'bar')"
+
+# Pretty-print JSON
+exec-js-edits --dry-run data.json "JSON.stringify(JSON.parse(content), null, 2)"
+```
+
 ## Exit codes
 
-- `0` -- all edits applied successfully
-- `1` -- error occurred (parse failure, validation failure, file access error, etc.)
+- `0` — all edits applied successfully
+- `1` — error occurred (parse failure, validation failure, file access error, etc.)
 
 ## Library API
 
@@ -224,6 +214,7 @@ Pipe-friendly: `read-file src | write-file dest`
 | CLI | `apply-edits` (after `npm install -g @lenml/apply_edits`) |
 | CLI (read file) | `read-file <path>` |
 | CLI (write file) | `write-file <path> [content]` |
+| CLI (exec JS) | `exec-js-edits [--dry-run] <file> <js-code>` |
 | Parser | `import { parseCommand } from "@lenml/apply_edits"` |
 | Editor | `import { simulateEdits, applyEditsAtomic } from "@lenml/apply_edits"` |
 | Encoding | `import { readFileAutoEncoding, writeFileUtf8 } from "@lenml/apply_edits"` |
