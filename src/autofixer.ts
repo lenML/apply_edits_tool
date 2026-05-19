@@ -97,10 +97,7 @@ function addMissingFences(input: string): string {
     ) {
       let j = i + 1;
       while (j < lines.length && !lines[j].trim()) j++;
-      if (
-        j < lines.length &&
-        lines[j].trim().startsWith("<<<<<<<")
-      ) {
+      if (j < lines.length && lines[j].trim().startsWith("<<<<<<<")) {
         // Missing fences — wrap all blocks until next file path or end
         out.push(lines[i]); // file path
 
@@ -166,7 +163,11 @@ function fixMarkers(input: string): string {
       if (trimmed === "<<<<<<<") {
         return line.replace("<<<<<<<", "<<<<<<< SEARCH");
       }
-      if (trimmed.startsWith("<<<<<<<") && !trimmed.includes("SEARCH") && !trimmed.includes("MATCH")) {
+      if (
+        trimmed.startsWith("<<<<<<<") &&
+        !trimmed.includes("SEARCH") &&
+        !trimmed.includes("MATCH")
+      ) {
         return line.replace("<<<<<<<", "<<<<<<< SEARCH");
       }
       if (trimmed === ">>>>>>>") {
@@ -192,7 +193,6 @@ function fixMarkers(input: string): string {
 //   =======                        =======
 //   new code                       new code
 //   >>>>>>> REPLACE                >>>>>>> REPLACE
-
 
 // ── Public entry point ──
 

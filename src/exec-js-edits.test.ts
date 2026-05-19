@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 const cli = path.resolve("dist/exec-js-edits-cli.js");
 
 function run(...args: string[]): { stdout: string; stderr: string } {
-  const cmd = `node ${cli} ${args.map(a => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`;
+  const cmd = `node ${cli} ${args.map((a) => `"${a.replace(/"/g, '\\"')}"`).join(" ")}`;
   try {
     const stdout = execSync(cmd, { encoding: "utf-8", windowsHide: true });
     return { stdout, stderr: "" };

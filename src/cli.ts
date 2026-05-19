@@ -18,7 +18,6 @@ import {
 
 import pkg from "../package.json";
 
-
 /**
  * Checks the decoded input for encoding red flags.
  * Returns an error message if issues are detected, null if clean.
@@ -34,10 +33,8 @@ function checkEncodingIssues(input: string): string | null {
   }
 
   // Check for trailing BOM remnant (?? at start from UTF-16 LE BOM)
-  if (input.length > 0 && (input.charCodeAt(0) === 0xFF || input.charCodeAt(0) === 0xFE)) {
-    return (
-      "Input starts with byte-order-mark remnant ? likely a BOM was not stripped correctly."
-    );
+  if (input.length > 0 && (input.charCodeAt(0) === 0xff || input.charCodeAt(0) === 0xfe)) {
+    return "Input starts with byte-order-mark remnant ? likely a BOM was not stripped correctly.";
   }
 
   return null;
@@ -175,7 +172,9 @@ async function main(): Promise<void> {
 
   try {
     await applyEditsAtomic(simulation.files, workspace!);
-    console.log(formatSuccess(simulation.files.size, [...simulation.files.keys()], simulation.matches));
+    console.log(
+      formatSuccess(simulation.files.size, [...simulation.files.keys()], simulation.matches),
+    );
     process.exit(0);
   } catch (err: any) {
     console.error(formatApplyError(err.message));

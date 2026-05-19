@@ -10,7 +10,9 @@ async function main() {
     console.log("The JS code receives `content` as the file content string.");
     console.log("Examples:");
     console.log("  exec-js-edits main.ts \"return content.replace(/foo/g, 'bar')\"");
-    console.log("  exec-js-edits --dry-run data.json \"c => JSON.stringify(JSON.parse(c), null, 2)\"");
+    console.log(
+      '  exec-js-edits --dry-run data.json "c => JSON.stringify(JSON.parse(c), null, 2)"',
+    );
     process.exit(0);
   }
   if (args[0] === "--version") {

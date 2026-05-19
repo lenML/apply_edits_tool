@@ -6,11 +6,7 @@ const MAX_SNIPPET_LINES = 12;
 // ── Helpers ──
 
 /** Show first N lines of content with line numbers and a highlight marker. */
-function snippet(
-  content: string,
-  highlightLine?: number,
-  maxLines = MAX_SNIPPET_LINES,
-): string {
+function snippet(content: string, highlightLine?: number, maxLines = MAX_SNIPPET_LINES): string {
   const lines = content.split("\n");
   const total = lines.length;
   const show = Math.min(total, maxLines);
@@ -52,7 +48,11 @@ export function formatNoCommand(input?: string): string {
       lines.push("    (empty input)");
     } else {
       const preview = input.slice(0, 200);
-      const escaped = preview.replace(/\x1b/g, "␛").replace(/\0/g, "␀");
+      const escCode = String.fromCharCode(27);
+      const esc = new RegExp(escCode, "g");
+      const nulCode = String.fromCharCode(0);
+      const nul = new RegExp(nulCode, "g");
+      const escaped = preview.replace(esc, "␛").replace(nul, "␀");
       lines.push(`    "${escaped}${size > 200 ? "…" : ""}"`);
     }
   }
@@ -67,13 +67,13 @@ export function formatParseError(message: string, command?: string): string {
   out.push(`✖ Parse error`);
   out.push(`  ${message}`);
 
-    if (command) {
-      const size = command.length;
-      const cmdLines = command.split("\n");
-      out.push("");
-      out.push(`  Input: ${size} chars, ${cmdLines.length} lines`);
-      out.push(snippet(command, 15));
-    }
+  if (command) {
+    const size = command.length;
+    const cmdLines = command.split("\n");
+    out.push("");
+    out.push(`  Input: ${size} chars, ${cmdLines.length} lines`);
+    out.push(snippet(command, 15));
+  }
 
   return out.join("\n");
 }
@@ -143,29 +143,19 @@ export function formatSimulationErrors(errors: SimulationError[], rawInput?: str
         const ccLines = cc.split("\n");
         const trimmedSearch = firstSearchLine.trim();
         const trimmedSearchLower = trimmedSearch.toLowerCase();
-        const closeMatch = ccLines.findIndex(
-          (l) => l.trim().toLowerCase() === trimmedSearchLower,
-        );
+        const closeMatch = ccLines.findIndex((l) => l.trim().toLowerCase() === trimmedSearchLower);
         if (closeMatch >= 0) {
-          out.push(
-            `  💡 Tip: Line ${closeMatch + 1} of the file matches the first line of`,
-          );
+          out.push(`  💡 Tip: Line ${closeMatch + 1} of the file matches the first line of`);
           out.push(`     your search text. Previous blocks may have modified`);
           out.push(`     the content after that point — check the order of edits.`);
         } else {
           const prefix = trimmedSearch.slice(0, 20).toLowerCase();
-          const partialMatch = ccLines.findIndex((l) =>
-            l.trim().toLowerCase().includes(prefix),
-          );
+          const partialMatch = ccLines.findIndex((l) => l.trim().toLowerCase().includes(prefix));
           if (partialMatch >= 0) {
-            out.push(
-              `  💡 Tip: A partial match was found at line ${partialMatch + 1}.`,
-            );
+            out.push(`  💡 Tip: A partial match was found at line ${partialMatch + 1}.`);
             out.push(`     Check for case differences, typos, or whitespace.`);
           } else {
-            out.push(
-              `  💡 Tip: The search text does not appear anywhere in the file.`,
-            );
+            out.push(`  💡 Tip: The search text does not appear anywhere in the file.`);
             out.push(`     Check that the file path is correct and the content exists.`);
           }
         }
@@ -198,7 +188,11 @@ export function formatDryRun(fileCount: number): string {
   return `DRY RUN - All ${fileCount} file(s) validated but NOT applied.`;
 }
 
-export function formatSuccess(fileCount: number, files?: string[], matches?: { filePath: string; matchedLine: string }[]): string {
+export function formatSuccess(
+  fileCount: number,
+  files?: string[],
+  matches?: { filePath: string; matchedLine: string }[],
+): string {
   const out: string[] = [];
   out.push(`✔ Successfully applied edits to ${fileCount} file(s).`);
   if (files && files.length > 0) {
@@ -206,7 +200,8 @@ export function formatSuccess(fileCount: number, files?: string[], matches?: { f
       out.push(`   - ${f}`);
       const m = matches?.find((x) => x.filePath === f);
       if (m) {
-        const display = m.matchedLine.length > 60 ? m.matchedLine.slice(0, 57) + "..." : m.matchedLine;
+        const display =
+          m.matchedLine.length > 60 ? m.matchedLine.slice(0, 57) + "..." : m.matchedLine;
         out.push(`     Matched: ${display}`);
       }
     }

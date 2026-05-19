@@ -81,14 +81,16 @@ describe("feedback", () => {
   });
 
   it("formatSimulationErrors with rawInput shows input size", () => {
-    const errors = [{
-      filePath: "test.ts",
-      blockIndex: 0,
-      totalBlocks: 1,
-      searchText: "old",
-      replaceText: "new",
-      error: "not found",
-    }];
+    const errors = [
+      {
+        filePath: "test.ts",
+        blockIndex: 0,
+        totalBlocks: 1,
+        searchText: "old",
+        replaceText: "new",
+        error: "not found",
+      },
+    ];
     const msg = formatSimulationErrors(errors, "test input");
     expect(msg).toContain("test.ts");
     expect(msg).toContain("Input:");
@@ -96,15 +98,17 @@ describe("feedback", () => {
   });
 
   it("formatSimulationErrors with currentContent gives tips", () => {
-    const errors = [{
-      filePath: "test.ts",
-      blockIndex: 0,
-      totalBlocks: 1,
-      searchText: "old code",
-      replaceText: "new code",
-      error: "SEARCH block not found",
-      currentContent: "old code\nother content",
-    }];
+    const errors = [
+      {
+        filePath: "test.ts",
+        blockIndex: 0,
+        totalBlocks: 1,
+        searchText: "old code",
+        replaceText: "new code",
+        error: "SEARCH block not found",
+        currentContent: "old code\nother content",
+      },
+    ];
     const msg = formatSimulationErrors(errors, "");
     expect(msg).toContain("Current file content");
     expect(msg).toContain("old code");
@@ -117,57 +121,65 @@ describe("feedback", () => {
 
   it("formatSimulationErrors with many lines triggers snippet truncation", () => {
     const manyLines = Array.from({ length: 20 }, (_, i) => "line " + i).join("\n");
-    const errors = [{
-      filePath: "test.ts",
-      blockIndex: 0,
-      totalBlocks: 1,
-      searchText: "old",
-      replaceText: "new",
-      error: "SEARCH block not found",
-      currentContent: manyLines,
-    }];
+    const errors = [
+      {
+        filePath: "test.ts",
+        blockIndex: 0,
+        totalBlocks: 1,
+        searchText: "old",
+        replaceText: "new",
+        error: "SEARCH block not found",
+        currentContent: manyLines,
+      },
+    ];
     const msg = formatSimulationErrors(errors, "");
     expect(msg).toContain("(8 more lines)");
   });
 
   it("formatSimulationErrors with exact line match gives close match tip", () => {
-    const errors = [{
-      filePath: "test.ts",
-      blockIndex: 0,
-      totalBlocks: 1,
-      searchText: "def foo():\n    pass",
-      replaceText: "new code",
-      error: "SEARCH block not found",
-      currentContent: "def foo():\n    pass\nother content",
-    }];
+    const errors = [
+      {
+        filePath: "test.ts",
+        blockIndex: 0,
+        totalBlocks: 1,
+        searchText: "def foo():\n    pass",
+        replaceText: "new code",
+        error: "SEARCH block not found",
+        currentContent: "def foo():\n    pass\nother content",
+      },
+    ];
     const msg = formatSimulationErrors(errors, "");
     expect(msg).toContain("matches the first line");
   });
 
   it("formatSimulationErrors with partial match gives tip", () => {
-    const errors = [{
-      filePath: "test.ts",
-      blockIndex: 0,
-      totalBlocks: 1,
-      searchText: "OLD_CODE_HERE",
-      replaceText: "new",
-      error: "SEARCH block not found",
-      currentContent: "some old_code_here line\nanother line",
-    }];
+    const errors = [
+      {
+        filePath: "test.ts",
+        blockIndex: 0,
+        totalBlocks: 1,
+        searchText: "OLD_CODE_HERE",
+        replaceText: "new",
+        error: "SEARCH block not found",
+        currentContent: "some old_code_here line\nanother line",
+      },
+    ];
     const msg = formatSimulationErrors(errors, "");
     expect(msg).toContain("partial match");
   });
 
   it("formatSimulationErrors with no match gives default tip", () => {
-    const errors = [{
-      filePath: "test.ts",
-      blockIndex: 0,
-      totalBlocks: 1,
-      searchText: "completely missing text",
-      replaceText: "new",
-      error: "SEARCH block not found",
-      currentContent: "some content\nother stuff",
-    }];
+    const errors = [
+      {
+        filePath: "test.ts",
+        blockIndex: 0,
+        totalBlocks: 1,
+        searchText: "completely missing text",
+        replaceText: "new",
+        error: "SEARCH block not found",
+        currentContent: "some content\nother stuff",
+      },
+    ];
     const msg = formatSimulationErrors(errors, "");
     expect(msg).toContain("does not appear anywhere");
   });

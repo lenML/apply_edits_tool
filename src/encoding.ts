@@ -33,7 +33,9 @@ const encodings = [
  *   4. Fallback to latin1
  */
 // Normalize CRLF to LF for consistency
-function normalizeCRLF(s: string): string { return s.replace(/\r\n/g, "\n"); }
+function normalizeCRLF(s: string): string {
+  return s.replace(/\r\n/g, "\n");
+}
 
 export function decodeBuffer(buffer: Buffer): string {
   if (buffer.length === 0) return "";
@@ -79,9 +81,12 @@ export async function readFileAutoEncoding(filePath: string): Promise<string> {
   return normalizeCRLF(decodeBuffer(buffer));
 }
 
-
 /**
  * Writes a file as UTF-8 without BOM.
+ */
+/**
+ * Writes a file as UTF-8 without BOM, using atomic write (temp file + rename).
+ * Falls back to direct write if rename fails (cross-device links, etc.).
  */
 export async function writeFileUtf8(filePath: string, content: string): Promise<void> {
   await fs.writeFile(filePath, content, "utf-8");

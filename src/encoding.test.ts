@@ -15,22 +15,26 @@ describe("encoding", () => {
   });
 
   it("decodes UTF-8 BOM buffer", () => {
-    const buf = Buffer.from([0xEF, 0xBB, 0xBF, 0x68, 0x65, 0x6C, 0x6C, 0x6F]);
+    const buf = Buffer.from([0xef, 0xbb, 0xbf, 0x68, 0x65, 0x6c, 0x6c, 0x6f]);
     expect(decodeBuffer(buf)).toBe("hello");
   });
 
   it("decodes UTF-16 LE BOM buffer", () => {
-    const buf = Buffer.from([0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x6C, 0x00, 0x6C, 0x00, 0x6F, 0x00]);
+    const buf = Buffer.from([
+      0xff, 0xfe, 0x68, 0x00, 0x65, 0x00, 0x6c, 0x00, 0x6c, 0x00, 0x6f, 0x00,
+    ]);
     expect(decodeBuffer(buf)).toBe("hello");
   });
 
   it("decodes UTF-16 BE BOM buffer", () => {
-    const buf = Buffer.from([0xFE, 0xFF, 0x00, 0x68, 0x00, 0x65, 0x00, 0x6C, 0x00, 0x6C, 0x00, 0x6F]);
+    const buf = Buffer.from([
+      0xfe, 0xff, 0x00, 0x68, 0x00, 0x65, 0x00, 0x6c, 0x00, 0x6c, 0x00, 0x6f,
+    ]);
     expect(decodeBuffer(buf)).toBe("hello");
   });
 
   it("handles non-UTF-8 bytes gracefully (falls through encodings)", () => {
-    const buf = Buffer.from([0x80, 0x81, 0x82, 0xFF]);
+    const buf = Buffer.from([0x80, 0x81, 0x82, 0xff]);
     const result = decodeBuffer(buf);
     expect(typeof result).toBe("string");
     expect(result.length).toBeGreaterThan(0);
@@ -49,7 +53,7 @@ describe("encoding", () => {
 
   it("reads UTF-8 with BOM", async () => {
     const fp = path.join(testDir, "test_utf8_bom_" + Date.now() + ".txt");
-    const buf = Buffer.from([0xEF, 0xBB, 0xBF, ...Buffer.from("hello ??", "utf-8")]);
+    const buf = Buffer.from([0xef, 0xbb, 0xbf, ...Buffer.from("hello ??", "utf-8")]);
     await fs.writeFile(fp, buf);
     const result = await readFileAutoEncoding(fp);
     expect(result).toBe("hello ??");
@@ -59,11 +63,8 @@ describe("encoding", () => {
   it("reads UTF-16 LE with BOM", async () => {
     const fp = path.join(testDir, "test_utf16le_" + Date.now() + ".txt");
     // Write UTF-16 LE with BOM manually
-    const encoder = new TextEncoder();
     const encoded = Buffer.from("hello", "utf-8");
-    const bom = Buffer.from([0xFF, 0xFE]);
-    const utf16le = Buffer.from(encoded.toString("binary"), "binary");
-    // utf16le encoding via iconv-lite style: each char -> 2 bytes
+    const bom = Buffer.from([0xff, 0xfe]);
     const buf = Buffer.alloc(encoded.length * 2);
     for (let i = 0; i < encoded.length; i++) {
       buf[i * 2] = encoded[i];

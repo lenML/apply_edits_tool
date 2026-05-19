@@ -48,8 +48,6 @@ export function parseCommand(command: string): FileEdit[] {
     }
     i++;
 
-
-
     const blocks = parseEditBlocks(fenceLines, filePath);
     fileEdits.push({ filePath, blocks });
   }

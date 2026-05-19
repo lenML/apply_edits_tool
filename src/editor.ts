@@ -1,7 +1,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { readFileAutoEncoding, writeFileUtf8 } from "./encoding.js";
-import type { EditBlock, FileEdit, SimulationResult, EditMode } from "./types.js";
+import { randomSuffix } from "./atomic.js";
+import type { EditBlock, FileEdit, SimulationResult } from "./types.js";
 import { findMatchMatch, findSearchMatch } from "./matcher.js";
 
 // ── Phase 1: Sequential simulation in virtual buffer ──
@@ -69,9 +70,10 @@ export async function simulateEdits(
       }
 
       if (!match) {
-        const prefix = i === 0
-          ? `${block.mode} block not found`
-          : `${block.mode} block not found after applying previous ${i} block(s)`;
+        const prefix =
+          i === 0
+            ? `${block.mode} block not found`
+            : `${block.mode} block not found after applying previous ${i} block(s)`;
         result.valid = false;
         result.errors.push({
           filePath,
@@ -106,10 +108,6 @@ export async function simulateEdits(
 }
 
 // ── Helpers for atomic write ──
-
-function randomSuffix(): string {
-  return Date.now().toString(36) + "." + Math.random().toString(36).slice(2, 8);
-}
 
 async function writeWithRetry(filePath: string, content: string, maxRetries = 3): Promise<void> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {

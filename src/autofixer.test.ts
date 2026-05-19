@@ -22,7 +22,9 @@ describe("autofixInput", () => {
   });
 
   it("fixes path inside fence with blank lines before path", () => {
-    const input = [bt, "", "  ", "path/to/file.py", "", searchH, "a", sep, "b", replF, bt].join("\n");
+    const input = [bt, "", "  ", "path/to/file.py", "", searchH, "a", sep, "b", replF, bt].join(
+      "\n",
+    );
     const result = autofixInput(input);
     expect(result).toContain("path/to/file.py\n" + bt);
   });
@@ -38,11 +40,9 @@ describe("autofixInput", () => {
   });
 
   it("adds missing fences around multiple blocks for same file", () => {
-    const input = [
-      "test.py",
-      searchH, "a", sep, "a'", replF,
-      searchH, "b", sep, "b'", replF,
-    ].join("\n");
+    const input = ["test.py", searchH, "a", sep, "a'", replF, searchH, "b", sep, "b'", replF].join(
+      "\n",
+    );
     const result = autofixInput(input);
     expect(result).toContain(bt + "\n" + searchH);
     expect(result).toContain(replF + "\n" + bt);
@@ -53,10 +53,18 @@ describe("autofixInput", () => {
   it("adds missing fences around multiple files separated by non-marker line", () => {
     const input = [
       "a.ts",
-      searchH, "a", sep, "a'", replF,
+      searchH,
+      "a",
+      sep,
+      "a'",
+      replF,
       "",
       "b.ts",
-      searchH, "b", sep, "b'", replF,
+      searchH,
+      "b",
+      sep,
+      "b'",
+      replF,
     ].join("\n");
     const result = autofixInput(input);
     expect(result).toContain("a.ts");

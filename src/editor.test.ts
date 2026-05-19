@@ -80,8 +80,14 @@ describe("simulateEdits", () => {
       [workspace + "/merged_test.txt"]: "AAA\nBBB\n",
     });
     const edits: FileEdit[] = [
-      { filePath: "merged_test.txt", blocks: [{ mode: "SEARCH", searchText: "AAA", replaceText: "aaa" }] },
-      { filePath: "merged_test.txt", blocks: [{ mode: "SEARCH", searchText: "BBB", replaceText: "bbb" }] },
+      {
+        filePath: "merged_test.txt",
+        blocks: [{ mode: "SEARCH", searchText: "AAA", replaceText: "aaa" }],
+      },
+      {
+        filePath: "merged_test.txt",
+        blocks: [{ mode: "SEARCH", searchText: "BBB", replaceText: "bbb" }],
+      },
     ];
     const result = await simulateEdits(edits, workspace);
     expect(result.valid).toBe(true);
@@ -95,8 +101,14 @@ describe("simulateEdits", () => {
       [workspace + "/file_b.txt"]: "BBB\n",
     });
     const edits: FileEdit[] = [
-      { filePath: "file_a.txt", blocks: [{ mode: "SEARCH", searchText: "AAA", replaceText: "aaa" }] },
-      { filePath: "file_b.txt", blocks: [{ mode: "SEARCH", searchText: "BBB", replaceText: "bbb" }] },
+      {
+        filePath: "file_a.txt",
+        blocks: [{ mode: "SEARCH", searchText: "AAA", replaceText: "aaa" }],
+      },
+      {
+        filePath: "file_b.txt",
+        blocks: [{ mode: "SEARCH", searchText: "BBB", replaceText: "bbb" }],
+      },
     ];
     const result = await simulateEdits(edits, workspace);
     expect(result.valid).toBe(true);
@@ -106,7 +118,12 @@ describe("simulateEdits", () => {
 
   it("rejects path escaping workspace", async () => {
     const result = await simulateEdits(
-      [{ filePath: "../escape.txt", blocks: [{ mode: "SEARCH", searchText: "x", replaceText: "y" }] }],
+      [
+        {
+          filePath: "../escape.txt",
+          blocks: [{ mode: "SEARCH", searchText: "x", replaceText: "y" }],
+        },
+      ],
       workspace,
     );
     expect(result.valid).toBe(false);
@@ -115,7 +132,12 @@ describe("simulateEdits", () => {
 
   it("reports file read errors", async () => {
     const result = await simulateEdits(
-      [{ filePath: "nonexistent_file_xyz.txt", blocks: [{ mode: "SEARCH", searchText: "x", replaceText: "y" }] }],
+      [
+        {
+          filePath: "nonexistent_file_xyz.txt",
+          blocks: [{ mode: "SEARCH", searchText: "x", replaceText: "y" }],
+        },
+      ],
       workspace,
     );
     expect(result.valid).toBe(false);

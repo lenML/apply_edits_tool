@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { decodeBuffer, writeFileUtf8 } from "./encoding.js";
+import { decodeBuffer } from "./encoding.js";
+import { writeFileAtomic } from "./atomic.js";
 import * as path from "node:path";
 
 async function readStdin(): Promise<string> {
@@ -37,7 +38,11 @@ async function main() {
     if (!content) {
       content = await readStdin();
     }
-    await writeFileUtf8(filePath, content);
+    await writeFileAtomic(filePath, content);
+    const lines = content.split("\n").length;
+    const chars = content.length;
+    const displayPath = path.relative(process.cwd(), filePath);
+    console.error(`✔ Wrote ${lines} lines, ${chars} chars to ${displayPath}`);
   } catch (err) {
     console.error("Error writing file:", err);
     process.exit(1);

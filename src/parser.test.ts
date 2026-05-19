@@ -29,7 +29,8 @@ describe("parseCommand", () => {
   });
 
   it("parse with 4-backtick fence", () => {
-    const cmd = "README.md\n" +
+    const cmd =
+      "README.md\n" +
       "````markdown\n" +
       "<<<<<<< SEARCH\n" +
       "old\n" +
@@ -47,7 +48,8 @@ describe("parseCommand", () => {
   });
 
   it("parse with 4-backtick fence containing 3-backtick code inside", () => {
-    const cmd = "README.md\n" +
+    const cmd =
+      "README.md\n" +
       "````markdown\n" +
       "some text with\n" +
       "```python\n" +
