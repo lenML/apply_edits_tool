@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { decodeBuffer } from "./encoding.js";
 import { autofixInput } from "./autofixer.js";
 
+import { HDR_SEARCH, HDR_MATCH, MARKER_SEPARATOR, HDR_REPLACE } from "./symbols.js";
 import { parseCommand } from "./parser.js";
 import { simulateEdits, applyEditsAtomic } from "./editor.js";
 import {
@@ -62,27 +63,23 @@ function printHelp(): void {
 The command format consists of one or more blocks:
 
 path/to/file.py
-\`\`\`python
-<<<<<<< SEARCH
+${HDR_SEARCH}
 old code
-=======
+${MARKER_SEPARATOR}
 new code
->>>>>>> REPLACE
-\`\`\`
+${HDR_REPLACE}
 
 For MATCH mode with wildcard:
 
 path/to/file.py
-\`\`\`python
-<<<<<<< MATCH
+${HDR_MATCH}
 def fib(n):
 ...
 return result
-=======
+${MARKER_SEPARATOR}
 def fib(n):
 return n
->>>>>>> REPLACE
-\`\`\`
+${HDR_REPLACE}
   `);
 }
 

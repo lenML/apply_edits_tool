@@ -3,6 +3,19 @@
  * to improve the success rate of edit application.
  */
 
+import {
+  MARKER_SEARCH,
+  MARKER_SEPARATOR,
+  MARKER_REPLACE,
+  FENCE,
+  HDR_SEARCH,
+  HDR_REPLACE,
+  KW_SEARCH,
+  KW_MATCH,
+  KW_REPLACE,
+  isMarkerLine,
+} from "./symbols.js";
+
 // ── Fix 1: File path mistakenly placed inside code fence ──
 //
 // Before:                        After:
@@ -26,22 +39,22 @@ function fixPathInsideFence(input: string): string {
     const trimmed = cur.trim();
 
     // Track SEARCH/MATCH/REPLACE block boundaries
-    if (trimmed.startsWith("<<<<<<<")) {
+    if (trimmed.startsWith(MARKER_SEARCH)) {
       insideBlockDepth++;
-    } else if (trimmed.startsWith(">>>>>>>")) {
+    } else if (trimmed.startsWith(MARKER_REPLACE)) {
       insideBlockDepth--;
     }
 
-    if (insideBlockDepth === 0 && trimmed.startsWith("```")) {
+    if (insideBlockDepth === 0 && trimmed.startsWith(FENCE)) {
       // Look ahead past blank lines for a non-blank, non-fence, non-marker line
       let j = i + 1;
       while (j < lines.length && !lines[j].trim()) j++;
       if (
         j < lines.length &&
-        !lines[j].trim().startsWith("```") &&
-        !lines[j].trim().startsWith("<<<<<<<") &&
-        !lines[j].trim().startsWith("=======") &&
-        !lines[j].trim().startsWith(">>>>>>>")
+        !lines[j].trim().startsWith(FENCE) &&
+        !lines[j].trim().startsWith(MARKER_SEARCH) &&
+        !lines[j].trim().startsWith(MARKER_SEPARATOR) &&
+        !lines[j].trim().startsWith(MARKER_REPLACE)
       ) {
         // Move file path before the fence
         out.push(lines[j]);
@@ -69,15 +82,6 @@ function fixPathInsideFence(input: string): string {
 //                                  >>>>>>> REPLACE
 //                                  ```
 
-function isMarkerLine(s: string): boolean {
-  return (
-    s.startsWith("```") ||
-    s.startsWith("<<<<<<<") ||
-    s.startsWith("=======") ||
-    s.startsWith(">>>>>>>")
-  );
-}
-
 function addMissingFences(input: string): string {
   const lines = input.split("\n");
   const out: string[] = [];
@@ -90,32 +94,32 @@ function addMissingFences(input: string): string {
     // Check if this looks like a file path without a following fence
     if (
       trimmed &&
-      !trimmed.startsWith("```") &&
-      !trimmed.startsWith("<<<<<<<") &&
-      !trimmed.startsWith(">>>>>>>") &&
-      !trimmed.startsWith("=======")
+      !trimmed.startsWith(FENCE) &&
+      !trimmed.startsWith(MARKER_SEARCH) &&
+      !trimmed.startsWith(MARKER_REPLACE) &&
+      !trimmed.startsWith(MARKER_SEPARATOR)
     ) {
       let j = i + 1;
       while (j < lines.length && !lines[j].trim()) j++;
-      if (j < lines.length && lines[j].trim().startsWith("<<<<<<<")) {
+      if (j < lines.length && lines[j].trim().startsWith(MARKER_SEARCH)) {
         // Missing fences — wrap all blocks until next file path or end
         out.push(lines[i]); // file path
 
         // Insert opening fence before the first <<<<<<<
         out.push("");
-        out.push("```");
+        out.push(FENCE);
 
         // Find the last >>>>>>> before the next file-path-like line
         let endIdx = -1;
         let afterLastRepl = false;
         for (let scan = j; scan < lines.length; scan++) {
           const st = lines[scan].trim();
-          if (st.startsWith(">>>>>>>")) {
+          if (st.startsWith(MARKER_REPLACE)) {
             endIdx = scan;
             afterLastRepl = true;
           } else if (afterLastRepl && st && !isMarkerLine(st)) {
             break; // next file path
-          } else if (st.startsWith("<<<<<<<")) {
+          } else if (st.startsWith(MARKER_SEARCH)) {
             afterLastRepl = false;
           }
         }
@@ -133,7 +137,7 @@ function addMissingFences(input: string): string {
         }
 
         // Insert closing fence
-        out.push("```");
+        out.push(FENCE);
 
         i = endIdx + 1;
         continue;
@@ -160,21 +164,21 @@ function fixMarkers(input: string): string {
     .split("\n")
     .map((line) => {
       const trimmed = line.trim();
-      if (trimmed === "<<<<<<<") {
-        return line.replace("<<<<<<<", "<<<<<<< SEARCH");
+      if (trimmed === MARKER_SEARCH) {
+        return line.replace(MARKER_SEARCH, HDR_SEARCH);
       }
       if (
-        trimmed.startsWith("<<<<<<<") &&
-        !trimmed.includes("SEARCH") &&
-        !trimmed.includes("MATCH")
+        trimmed.startsWith(MARKER_SEARCH) &&
+        !trimmed.includes(KW_SEARCH) &&
+        !trimmed.includes(KW_MATCH)
       ) {
-        return line.replace("<<<<<<<", "<<<<<<< SEARCH");
+        return line.replace(MARKER_SEARCH, HDR_SEARCH);
       }
-      if (trimmed === ">>>>>>>") {
-        return line.replace(">>>>>>>", ">>>>>>> REPLACE");
+      if (trimmed === MARKER_REPLACE) {
+        return line.replace(MARKER_REPLACE, HDR_REPLACE);
       }
-      if (trimmed.startsWith(">>>>>>>") && !trimmed.includes("REPLACE")) {
-        return line.replace(">>>>>>>", ">>>>>>> REPLACE");
+      if (trimmed.startsWith(MARKER_REPLACE) && !trimmed.includes(KW_REPLACE)) {
+        return line.replace(MARKER_REPLACE, HDR_REPLACE);
       }
       return line;
     })

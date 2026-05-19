@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { HDR_SEARCH, MARKER_SEPARATOR, HDR_REPLACE, FENCE } from "./symbols.js";
 import { autofixInput } from "./autofixer.js";
 
-const bt = "```";
-const searchH = "<<<<<<< SEARCH";
-const sep = "=======";
-const replF = ">>>>>>> REPLACE";
+const bt = FENCE;
+const searchH = HDR_SEARCH;
+const sep = MARKER_SEPARATOR;
+const replF = HDR_REPLACE;
 
 describe("autofixInput", () => {
   it("leaves already-correct input unchanged", () => {

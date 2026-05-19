@@ -1,3 +1,4 @@
+import { HDR_SEARCH, MARKER_SEPARATOR } from "./symbols.js";
 import type { SimulationError } from "./types.js";
 
 const SEP = "─".repeat(48);
@@ -89,9 +90,9 @@ export function formatNoEdits(rawInput?: string): string {
     out.push("  Expected format:");
     out.push("    path/to/file.ext");
     out.push("    ```lang");
-    out.push("    <<<<<<< SEARCH");
+    out.push(`    ${HDR_SEARCH}`);
     out.push("    ...");
-    out.push("    =======");
+    out.push(`    ${MARKER_SEPARATOR}`);
     out.push("    ...");
     out.push("    >>>>>>> REPLACE");
     out.push("    ```");

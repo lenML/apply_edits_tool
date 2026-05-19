@@ -1,3 +1,11 @@
+import {
+  MARKER_SEARCH,
+  MARKER_SEPARATOR,
+  MARKER_REPLACE,
+  HDR_SEARCH,
+  HDR_MATCH,
+  HDR_REPLACE,
+} from "./symbols.js";
 import type { EditBlock, EditMode, FileEdit } from "./types.js";
 
 export function parseCommand(command: string): FileEdit[] {
@@ -67,9 +75,9 @@ function parseEditBlocks(lines: string[], filePath: string): EditBlock[] {
     }
     const line = lines[idx].trim();
     let mode: EditMode | null = null;
-    if (line === "<<<<<<< SEARCH") {
+    if (line === HDR_SEARCH) {
       mode = "SEARCH";
-    } else if (line === "<<<<<<< MATCH") {
+    } else if (line === HDR_MATCH) {
       mode = "MATCH";
     } else {
       idx++;
@@ -81,14 +89,14 @@ function parseEditBlocks(lines: string[], filePath: string): EditBlock[] {
     let searchDepth = 0;
     while (idx < n) {
       const sTrimmed = lines[idx].trim();
-      if (sTrimmed.startsWith("<<<<<<<")) searchDepth++;
-      else if (sTrimmed.startsWith(">>>>>>>")) searchDepth--;
-      if (sTrimmed === "=======" && searchDepth === 0) break;
+      if (sTrimmed.startsWith(MARKER_SEARCH)) searchDepth++;
+      else if (sTrimmed.startsWith(MARKER_REPLACE)) searchDepth--;
+      if (sTrimmed === MARKER_SEPARATOR && searchDepth === 0) break;
       searchLines.push(lines[idx]);
       idx++;
     }
     if (idx >= n) {
-      throw new Error(`Missing '=======' in ${filePath} block`);
+      throw new Error(`Missing '${MARKER_SEPARATOR}' in ${filePath} block`);
     }
     idx++;
 
@@ -98,9 +106,9 @@ function parseEditBlocks(lines: string[], filePath: string): EditBlock[] {
       const rTrimmed = lines[idx].trim();
       // Track nesting of <<<<<<< / >>>>>>> inside REPLACE content
       // Only stop when we find a >>>>>>> that closes OUR block
-      if (rTrimmed.startsWith("<<<<<<<")) {
+      if (rTrimmed.startsWith(MARKER_SEARCH)) {
         replaceDepth++;
-      } else if (rTrimmed.startsWith(">>>>>>>")) {
+      } else if (rTrimmed.startsWith(MARKER_REPLACE)) {
         if (replaceDepth === 0) break; // found OUR closing marker
         replaceDepth--;
       }
@@ -108,7 +116,7 @@ function parseEditBlocks(lines: string[], filePath: string): EditBlock[] {
       idx++;
     }
     if (idx >= n) {
-      throw new Error(`Missing '>>>>>>> REPLACE' in ${filePath} block`);
+      throw new Error(`Missing '${HDR_REPLACE}' in ${filePath} block`);
     }
     idx++;
 

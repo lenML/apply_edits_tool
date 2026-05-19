@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
+import { HDR_SEARCH, HDR_MATCH, MARKER_SEPARATOR, HDR_REPLACE, FENCE } from "./symbols.js";
 import { parseCommand } from "./parser.js";
 
-const fence = "```";
-const searchHeader = "<<<<<<< SEARCH";
-const matchHeader = "<<<<<<< MATCH";
-const separator = "=======";
-const replaceFooter = ">>>>>>> REPLACE";
+const fence = FENCE;
+const searchHeader = HDR_SEARCH;
+const matchHeader = HDR_MATCH;
+const separator = MARKER_SEPARATOR;
+const replaceFooter = HDR_REPLACE;
 
 describe("parseCommand", () => {
   it("parses a single SEARCH block", () => {
