@@ -1,13 +1,13 @@
 ---
 name: apply-edits
-description: Batch file editing with SEARCH/REPLACE and MATCH/REPLACE patterns, supporting atomic transactions and sequential simulation across multiple edits on the same file. Use when Codex needs to edit files via shell command using apply-edits, for multi-file batch edits that need atomic validation before writing, or when edits must be simulated sequentially on the same file.
+description: Batch file editing with search/replace patterns, supporting atomic writes and encoding-safe file I/O. Use when Codex needs to edit files via shell command using apply-edits, for single or multiple search-and-replace edits with validation before writing.
 ---
 
 # apply-edits
 
-Global CLI tool for batch file editing with SEARCH/REPLACE and MATCH/REPLACE (with `...` wildcard) patterns.
-Supports atomic transactions (all blocks validate before any file is written), sequential simulation
-across multiple edits on the same file, encoding auto-detection, and autofix of malformed input.
+CLI tool for batch file editing with search/replace patterns.
+Supports atomic writes (temp file + rename), encoding auto-detection,
+and trimmed line-by-line matching for whitespace flexibility.
 
 ## Usage
 
@@ -19,171 +19,70 @@ npm install -g @lenml/apply_edits
 
 ## Calling Convention
 
-**Always use pipe or heredoc.** Never pass the edit command as a quoted argument — quotes and special characters (`<<<<<<<`, backticks) cause truncation and parsing errors.
+Arguments are grouped in triples: `<file> <old-text> <new-text>`.
 
-### PowerShell
+A single edit:
 
-````powershell
-apply-edits --workspace . @'
-path/to/file.ext
-<<<<<<< SEARCH
-old code
-=======
-new code
->>>>>>> REPLACE
-'@
-````
-
-### Bash / Unix
-
-````bash
-apply-edits --workspace . << 'EOF'
-path/to/file.ext
-<<<<<<< SEARCH
-old code
-=======
-new code
->>>>>>> REPLACE
-EOF
-````
-
-If the edit command is omitted, reads from stdin by default.
-
-| Argument | Description |
-|----------|-------------|
-| `--workspace <dir>` | Root directory for file paths (default: current directory) |
-| `<command>` | The edit command string as positional argument |
-| `--help` | Show help |
-
-## Command Format
-
-Each command contains one or more file blocks.
-
-**For AI agents, MATCH mode is recommended** — it only needs a few anchor lines
-and skips irrelevant details with `...`, making edits more resilient:
-
-```
-path/to/file.ext
-<<<<<<< MATCH
-func foo() {
-...
-}
-=======
-func foo() {
-  // new body
-}
->>>>>>> REPLACE
+```bash
+apply-edits --workdir . <file> "<old>" "<new>"
 ```
 
-The `...` wildcard (non-greedy) matches zero or more lines between anchors.
-Use it to skip variable parts: imports, function bodies, long arg lists, etc.
+Multiple edits in one command:
 
-SEARCH mode for exact-text matches (use when you need precise control):
-
-```
-path/to/file.ext
-<<<<<<< SEARCH
-<code to find>
-=======
-<replacement code>
->>>>>>> REPLACE
+```bash
+apply-edits --workdir . <file> "<old1>" "<new1>" <file> "<old2>" "<new2>"
 ```
 
-> **Note:** ``` code fences around blocks are **optional**. The autofixer adds them
-> automatically if missing.
+| Argument          | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| `--workdir <dir>` | Root directory for file paths (default: current directory) |
+| `--help`          | Show help                                                  |
+| `--version`       | Show version number                                        |
 
-### Rules
+## Matching
 
-- **File path** — single line, absolute or relative to workspace; **must be repeated for every edit block**, even on the same file
-- **No blank line** between file path and `<<<<<<<`
-- **Blocks** — one or more `<<<<<<<` ... `>>>>>>>` blocks per file
-- **SEARCH** — lines matched exactly (leading/trailing whitespace trimmed)
-- **MATCH** — `...` matches zero or more lines (non-greedy); anchor lines must match in order
-- **Atomic** — all blocks validate before any file is written; failure aborts the entire operation
+Old text is matched in two ways:
 
-### Error handling
+1. **Direct string replace** — exact match, fast path
+2. **Trimmed line match** — each old text line (trimmed) matched against file lines (trimmed), ignoring whitespace differences
 
-- **Autofix**: Runs before parsing. Fixes: path-inside-fence, missing fences, missing keywords, indent normalization.
-- **Encoding**: Reads files with auto-detection (BOM -> UTF-8 -> CJK -> latin1). Writes as UTF-8 no BOM.
-- **Simulation**: All edits simulated sequentially on an in-memory virtual buffer before writing.
-- **Atomic write**: Uses temp file + rename. Retries 3x with backoff. Rolls back on failure.
+Both old and new text can span multiple lines.
 
 ## Examples
 
-### Single file, single edit (PowerShell)
+### Single edit (PowerShell)
 
-````powershell
-apply-edits --workspace . @'
-src/main.py
-<<<<<<< SEARCH
-print("hello")
-=======
-print("hello world")
->>>>>>> REPLACE
+```powershell
+apply-edits --workdir . src/main.py 'print("hello")' 'print("hello world")'
+```
+
+For multiline text, use a here-string:
+
+```powershell
+apply-edits --workdir . src/main.py @'
+function foo() {
+  return 1;
+}
+'@ @'
+function foo() {
+  return 2;
+}
 '@
-````
+```
 
-### Single file, single edit (Bash)
-
-````bash
-apply-edits --workspace . << 'EOF'
-src/main.py
-<<<<<<< SEARCH
-print("hello")
-=======
-print("hello world")
->>>>>>> REPLACE
-EOF
-````
-
-### Multiple files, MATCH mode (Bash)
-
-````bash
-apply-edits --workspace . << 'EOF'
-src/utils.py
-<<<<<<< MATCH
-def add(a, b):
-...
-    return result
-=======
-def add(a, b):
-    return a + b
->>>>>>> REPLACE
-
-README.md
-<<<<<<< SEARCH
-old content
-=======
-new content
->>>>>>> REPLACE
-EOF
-````
-
-### Multiple edits on the same file (Bash)
-
-> **Important:** Each edit block must repeat the file path, even when editing the same file.
-
-````bash
-apply-edits --workspace . << 'EOF'
-src/app.ts
-<<<<<<< SEARCH
-function oldOne() {
-=======
-function newOne() {
->>>>>>> REPLACE
-src/app.ts
-<<<<<<< SEARCH
-function another() {
-=======
-function updated() {
->>>>>>> REPLACE
-EOF
-````
-
-### Pipe from file
+### Single edit (Bash)
 
 ```bash
-cat edits.txt | apply-edits --workspace .
+apply-edits --workdir . src/main.py 'print("hello")' 'print("hello world")'
+```
+
+### Multiple edits on the same file
+
+```bash
+apply-edits --workdir . src/app.ts \
+  'function oldOne() {' 'function newOne() {' \
+  src/app.ts \
+  'function another() {' 'function updated() {'
 ```
 
 ## Companion Tools
@@ -191,41 +90,36 @@ cat edits.txt | apply-edits --workspace .
 ### `read-file <path>`
 
 Read a file with automatic encoding detection (BOM -> UTF-8 -> CJK -> latin1)
-and print as UTF-8. Avoids garbled output from raw `Get-Content` or Node.js fs.
+and print as UTF-8.
 
 ### `write-file <path> [content]`
 
 Write content as UTF-8 without BOM. Omit content to read from stdin.
-Pipe-friendly: `read-file src | write-file dest`
+Supports atomic write (temp file + rename).
 
 ### `exec-js-edits [--dry-run] <file> <js-code>`
 
-Read a file with encoding detection, run a JS transform on its content, write back as UTF-8.
+Read a file, run a JS transform, write back as UTF-8.
 The JS code receives `content` (string) and must return a string.
 
 ```bash
-# Replace foo with bar
 exec-js-edits main.ts "content.replace(/foo/g, 'bar')"
-
-# Pretty-print JSON
 exec-js-edits --dry-run data.json "JSON.stringify(JSON.parse(content), null, 2)"
 ```
 
 ## Exit codes
 
 - `0` — all edits applied successfully
-- `1` — error occurred (parse failure, validation failure, file access error, etc.)
+- `1` — error occurred (validation failure, file access error, etc.)
 
 ## Library API
 
-| Entry | Import |
-|-------|--------|
-| CLI | `apply-edits` (after `npm install -g @lenml/apply_edits`) |
-| CLI (read file) | `read-file <path>` |
-| CLI (write file) | `write-file <path> [content]` |
-| CLI (exec JS) | `exec-js-edits [--dry-run] <file> <js-code>` |
-| Parser | `import { parseCommand } from "@lenml/apply_edits"` |
-| Editor | `import { simulateEdits, applyEditsAtomic } from "@lenml/apply_edits"` |
-| Encoding | `import { readFileAutoEncoding, writeFileUtf8 } from "@lenml/apply_edits"` |
-| Autofixer | `import { autofixInput } from "@lenml/apply_edits"` |
-| Feedback | `import { formatSuccess, formatParseError, formatNoCommand, formatNoEdits, formatSimulationErrors, formatApplyError } from "@lenml/apply_edits"` |
+| Entry            | Import                                                                     |
+| ---------------- | -------------------------------------------------------------------------- |
+| CLI              | `apply-edits` (after `npm install -g @lenml/apply_edits`)                  |
+| CLI (read file)  | `read-file <path>`                                                         |
+| CLI (write file) | `write-file <path> [content]`                                              |
+| CLI (exec JS)    | `exec-js-edits [--dry-run] <file> <js-code>`                               |
+| Editor           | `import { simulateEdits, applyEditsAtomic } from "@lenml/apply_edits"`     |
+| Encoding         | `import { readFileAutoEncoding, writeFileUtf8 } from "@lenml/apply_edits"` |
+| Atomic I/O       | `import { writeFileAtomic, randomSuffix } from "@lenml/apply_edits"`       |

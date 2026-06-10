@@ -1,194 +1,97 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
-import { vol } from "memfs";
+import { describe, it, expect } from "vitest";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { tmpdir } from "node:os";
 import { simulateEdits, applyEditsAtomic } from "./editor.js";
-import type { FileEdit } from "./types.js";
+import type { EditEntry } from "./types.js";
 
-vi.mock("node:fs/promises", async () => {
-  const memfs = await import("memfs");
-  return memfs.fs.promises;
-});
-
-const workspace = process.cwd();
-
-function initMemfs(): void {
-  vol.reset();
-  vol.mkdirSync(workspace, { recursive: true });
+function tmpFile(prefix = "editor-test"): string {
+  return path.join(tmpdir(), `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`);
 }
 
 describe("simulateEdits", () => {
-  beforeEach(initMemfs);
+  it("returns error for non-existent file", async () => {
+    const entries: EditEntry[] = [{ filePath: "nonexistent.txt", oldText: "x", newText: "y" }];
+    const { files, errors } = await simulateEdits(entries, tmpdir());
+    expect(files.size).toBe(0);
+    expect(errors.length).toBe(1);
+    expect(errors[0].error).toContain("Cannot read file");
+  });
 
-  it("applies a single SEARCH edit", async () => {
-    vol.fromJSON({
-      [workspace + "/src/editor.ts"]: 'import * as fs from "node:fs/promises";',
-    });
-    const edits: FileEdit[] = [
-      {
-        filePath: "src/editor.ts",
-        blocks: [
-          {
-            mode: "SEARCH",
-            searchText: 'import * as fs from "node:fs/promises";',
-            replaceText: "// patched",
-          },
-        ],
-      },
+  it("returns error when old text not found", async () => {
+    const fp = tmpFile();
+    await fs.writeFile(fp, "hello world", "utf-8");
+    const entries: EditEntry[] = [{ filePath: fp, oldText: "not found", newText: "x" }];
+    const { files, errors } = await simulateEdits(entries, "/");
+    expect(files.size).toBe(0);
+    expect(errors.length).toBe(1);
+    await fs.unlink(fp);
+  });
+
+  it("replaces text with direct string match", async () => {
+    const fp = tmpFile();
+    await fs.writeFile(fp, "hello foo", "utf-8");
+    const relPath = path.basename(fp);
+    const dir = path.dirname(fp);
+    const entries: EditEntry[] = [
+      { filePath: relPath, oldText: "hello foo", newText: "hello bar" },
     ];
-    const result = await simulateEdits(edits, workspace);
-    expect(result.valid).toBe(true);
-    expect(result.files.get("src/editor.ts")).toContain("// patched");
+    const { files, errors } = await simulateEdits(entries, dir);
+    expect(errors).toHaveLength(0);
+    expect(files.size).toBe(1);
+    const content = files.values().next().value;
+    expect(content).toBe("hello bar");
+    await fs.unlink(fp);
   });
 
-  it("applies multiple blocks sequentially on the same file (second matches after first)", async () => {
-    vol.fromJSON({
-      [workspace + "/dummy.txt"]: "line A\nline B\nline C\n",
-    });
-    const edits: FileEdit[] = [
-      {
-        filePath: "dummy.txt",
-        blocks: [
-          { mode: "SEARCH", searchText: "line B", replaceText: "line B modified" },
-          { mode: "SEARCH", searchText: "line B modified", replaceText: "line B final" },
-        ],
-      },
+  it("replaces with trimmed line matching when direct match fails", async () => {
+    const fp = tmpFile();
+    await fs.writeFile(fp, "  hello foo", "utf-8");
+    const relPath = path.basename(fp);
+    const dir = path.dirname(fp);
+    const entries: EditEntry[] = [
+      { filePath: relPath, oldText: "hello foo", newText: "hello bar" },
     ];
-    const result = await simulateEdits(edits, workspace);
-    expect(result.valid).toBe(true);
-    expect(result.files.get("dummy.txt")).toBe("line A\nline B final\nline C\n");
+    const { files, errors } = await simulateEdits(entries, dir);
+    expect(errors).toHaveLength(0);
+    expect(files.size).toBe(1);
+    const content = files.values().next().value;
+    expect(content).toBe("  hello bar");
+    await fs.unlink(fp);
   });
 
-  it("fails when second block no longer matches after first edit", async () => {
-    vol.fromJSON({
-      [workspace + "/dummy2.txt"]: "line A\nline B\nline C\n",
-    });
-    const edits: FileEdit[] = [
-      {
-        filePath: "dummy2.txt",
-        blocks: [
-          { mode: "SEARCH", searchText: "line B", replaceText: "line B changed" },
-          { mode: "SEARCH", searchText: "line B", replaceText: "line B again" },
-        ],
-      },
+  it("applies multiple edits on the same file sequentially", async () => {
+    const fp = tmpFile();
+    await fs.writeFile(fp, "a\nb\nc\n", "utf-8");
+    const relPath = path.basename(fp);
+    const dir = path.dirname(fp);
+    const entries: EditEntry[] = [
+      { filePath: relPath, oldText: "a", newText: "x" },
+      { filePath: relPath, oldText: "c", newText: "z" },
     ];
-    const result = await simulateEdits(edits, workspace);
-    expect(result.valid).toBe(false);
-    expect(result.errors[0].error).toContain("after applying previous 1 block(s)");
+    const { files, errors } = await simulateEdits(entries, dir);
+    expect(errors).toHaveLength(0);
+    const content = files.get(path.resolve(dir, relPath));
+    expect(content).toBe("x\nb\nz\n");
+    await fs.unlink(fp);
   });
 
-  it("merges blocks when same file appears multiple times", async () => {
-    vol.fromJSON({
-      [workspace + "/merged_test.txt"]: "AAA\nBBB\n",
-    });
-    const edits: FileEdit[] = [
-      {
-        filePath: "merged_test.txt",
-        blocks: [{ mode: "SEARCH", searchText: "AAA", replaceText: "aaa" }],
-      },
-      {
-        filePath: "merged_test.txt",
-        blocks: [{ mode: "SEARCH", searchText: "BBB", replaceText: "bbb" }],
-      },
-    ];
-    const result = await simulateEdits(edits, workspace);
-    expect(result.valid).toBe(true);
-    expect(result.files.size).toBe(1);
-    expect(result.files.get("merged_test.txt")).toBe("aaa\nbbb\n");
-  });
-
-  it("handles multiple files", async () => {
-    vol.fromJSON({
-      [workspace + "/file_a.txt"]: "AAA\n",
-      [workspace + "/file_b.txt"]: "BBB\n",
-    });
-    const edits: FileEdit[] = [
-      {
-        filePath: "file_a.txt",
-        blocks: [{ mode: "SEARCH", searchText: "AAA", replaceText: "aaa" }],
-      },
-      {
-        filePath: "file_b.txt",
-        blocks: [{ mode: "SEARCH", searchText: "BBB", replaceText: "bbb" }],
-      },
-    ];
-    const result = await simulateEdits(edits, workspace);
-    expect(result.valid).toBe(true);
-    expect(result.files.get("file_a.txt")).toBe("aaa\n");
-    expect(result.files.get("file_b.txt")).toBe("bbb\n");
-  });
-
-  it("rejects path escaping workspace", async () => {
-    const result = await simulateEdits(
-      [
-        {
-          filePath: "../escape.txt",
-          blocks: [{ mode: "SEARCH", searchText: "x", replaceText: "y" }],
-        },
-      ],
-      workspace,
-    );
-    expect(result.valid).toBe(false);
-    expect(result.errors[0].error).toContain("escapes workspace");
-  });
-
-  it("reports file read errors", async () => {
-    const result = await simulateEdits(
-      [
-        {
-          filePath: "nonexistent_file_xyz.txt",
-          blocks: [{ mode: "SEARCH", searchText: "x", replaceText: "y" }],
-        },
-      ],
-      workspace,
-    );
-    expect(result.valid).toBe(false);
-    expect(result.errors[0].error).toContain("Cannot read file");
-  });
-
-  it("rejects MATCH block with no anchors", async () => {
-    vol.fromJSON({ [workspace + "/dummy3.txt"]: "content\n" });
-    const edits: FileEdit[] = [
-      {
-        filePath: "dummy3.txt",
-        blocks: [{ mode: "MATCH", searchText: "...\n...", replaceText: "replacement" }],
-      },
-    ];
-    const result = await simulateEdits(edits, workspace);
-    expect(result.valid).toBe(false);
+  it("rejects path escaping workdir", async () => {
+    const entries: EditEntry[] = [{ filePath: "../outside.txt", oldText: "x", newText: "y" }];
+    const { files, errors } = await simulateEdits(entries, tmpdir());
+    expect(files.size).toBe(0);
+    expect(errors.length).toBe(1);
+    expect(errors[0].error).toContain("escapes");
   });
 });
 
 describe("applyEditsAtomic", () => {
-  beforeEach(initMemfs);
-
-  it("writes content to disk atomically", async () => {
-    const contents = new Map<string, string>();
-    contents.set("atomic_test.txt", "hello atomic world\n");
-
-    await applyEditsAtomic(contents, workspace);
-
-    const written = vol.readFileSync(workspace + "/atomic_test.txt", "utf-8") as string;
-    expect(written).toBe("hello atomic world\n");
-  });
-
-  it("writes multiple files", async () => {
-    const contents = new Map<string, string>();
-    contents.set("multi_a.txt", "file a\n");
-    contents.set("multi_b.txt", "file b\n");
-
-    await applyEditsAtomic(contents, workspace);
-
-    expect(vol.readFileSync(workspace + "/multi_a.txt", "utf-8")).toBe("file a\n");
-    expect(vol.readFileSync(workspace + "/multi_b.txt", "utf-8")).toBe("file b\n");
-  });
-
-  it("leaves no temp files on success", async () => {
-    const contents = new Map<string, string>();
-    contents.set("notmp_test.txt", "no temp\n");
-
-    await applyEditsAtomic(contents, workspace);
-
-    const allFiles = Object.keys(vol.toJSON());
-    const tmpFiles = allFiles.filter((f) => f.endsWith(".tmp"));
-    expect(tmpFiles).toHaveLength(0);
+  it("writes files atomically", async () => {
+    const fp = tmpFile();
+    const content = new Map<string, string>([[fp, "hello atomic"]]);
+    await applyEditsAtomic(content, "/");
+    const data = await fs.readFile(fp, "utf-8");
+    expect(data).toBe("hello atomic");
+    await fs.unlink(fp);
   });
 });
